@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇美醫院醫學教育委員會會議記錄查詢</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .clear-btn, .expand-all-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .clear-btn:hover, .expand-all-btn:hover {
+            background: #5a6268;
+        }
+
+        .results-info {
+            padding: 15px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .content-section {
+            padding: 30px;
+        }
+
+        .meeting-record {
+            margin-bottom: 40px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .meeting-header {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .meeting-header:hover {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+        }
+
+        .meeting-header h2 {
+            font-size: 1.4em;
+            margin-bottom: 8px;
+        }
+
+        .meeting-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .meeting-content {
+            padding: 0;
+            background: white;
+        }
+
+        .content-block {
+            border-bottom: 1px solid #f0f0f0;
+            overflow: hidden;
+        }
+
+        .content-block:last-child {
+            border-bottom: none;
+        }
+
+        .block-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            border-left: 4px solid #667eea;
+            transition: background-color 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .block-header:hover {
+            background: #e9ecef;
+        }
+
+        .block-header h3 {
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin: 0;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .block-content {
+            padding: 20px;
+            background: white;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .sub-block {
+            margin-left: 20px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .sub-block h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .no-results h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        @media (max-width: 768px) {
+            .search-controls {
+                flex-direction: column;
+            }
+
+            .form-group {
+                min-width: 100%;
+            }
+
+            .meeting-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>奇美醫院醫學教育委員會會議記錄查詢</h1>
+            <div class="subtitle">Chi Mei Medical Center - Medical Education Committee Meeting Records</div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-controls">
+                <div class="form-group">
+                    <label for="dateFrom">起始日期：</label>
+                    <input type="month" id="dateFrom" value="2025-01">
+                </div>
+                <div class="form-group">
+                    <label for="dateTo">結束日期：</label>
+                    <input type="month" id="dateTo" value="2025-07">
+                </div>
+                <div class="form-group">
+                    <label for="keyword">關鍵字搜尋：</label>
+                    <input type="text" id="keyword" placeholder="請輸入關鍵字...">
+                </div>
+
+                <button class="search-btn" onclick="performSearch()">🔍 搜尋</button>
+                <button class="clear-btn" onclick="clearAllFilters()">清除</button>
+            </div>
+            <div>
+                <button class="expand-all-btn" onclick="expandAllBlocks()">展開全部</button>
+                <button class="expand-all-btn" onclick="collapseAllBlocks()">收合全部</button>
+            </div>
+            <div class="results-info" id="resultsInfo"></div>
+        </div>
+
+        <div class="content-section" id="contentSection">
+            <!-- 會議記錄將在這裡動態載入 -->
+        </div>
+    </div>
+
+    <script>
+        // 會議記錄資料
+        const meetingRecords = [
+            {
+                date: "2025-07",
+                title: "114年07月醫學教育委員會紀錄",
+                meetingDate: "114年07月09日（星期三）中午12時30分",
+                location: "第五醫療大樓五樓552會議室",
+                chairman: "陳志成",
+                content: [
+                    {
+                        title: "壹、頒獎表揚",
+                        content: [
+                            {
+                                title: "一、3-5月份實習醫學生選出「值班教學優秀獎」得獎者",
+                                content: "(附件一)"
+                            },
+                            {
+                                title: "二、敘事醫學系列競賽「醫療的瞬間・永恆的感動」攝影及短影音競賽得獎者",
+                                content: "(附件二)"
+                            }
+                        ]
+                    },
+                    {
+                        title: "貳、主席報告",
+                        content: "田宇峯首席醫療副院長將於8月1日轉任佳里院區院長，係其最後一次參與永康院區醫學教育委員會，感謝田首席長期對醫學教育之支持與指導，並再次強調醫學教育對於年輕醫師養成之關鍵角色，期勉與會各位委員持續協助投入。"
+                    },
+                    {
+                        title: "參、上次會議追蹤事項",
+                        content: "略"
+                    },
+                    {
+                        title: "肆、本次會議報告及討論事項",
+                        content: [
+                            {
+                                title: "一、臨床技能中心",
+                                content: "組隊參加「NCMEA國家臨床醫學教育獎」擬真情境類競賽，共計2組參賽：新人組：由急診醫學部林昱惠醫師指導，預定9月13日於林口長庚醫院競賽；急重症照護組：由急診醫學部蔡長志主任指導，預定11月15日於高雄醫學大學附設醫院競賽。"
+                            },
+                            {
+                                title: "二、教學中心",
+                                content: "1.「醫療的瞬間・永恆的感動」得獎作品將陸續於二五空橋「奇美暖心角」展出，後續亦規劃敘事徵文競賽，屆時請科部協助宣傳參與。\n2.「奇美暖心角」展區已於本週啟用，設計兼具主題性與人文療癒氛圍，預定7月18日舉辦開幕儀式，歡迎同仁參與。\n3.報告「數位賦能計畫整合藍圖」，採用DECODE框架，涵蓋：數位健康中的專業素養、病人與族群數位健康、健康資訊系統與健康資料科學等四大核心領域，推動三大主軸如下：\n(1)制度與整合：結合CBME框架，建立具奇美特色的CCC(臨床能力委員會)，委員納入：數位賦能委員、醫學人文專責委員、教學中心及品管中心同仁。\n(2)課程與推廣：專注個人AI能力培養，預計7月公告約20餘堂AI相關課程。\n(3)認證與分級：擬建立院內的AI能力分級與認證制度，並尋求具公信力之外部單位(如資策會)合作。"
+                            },
+                            {
+                                title: "三、醫事人員訓練組",
+                                content: "1.臨床醫事人員培訓計畫─教師與受訓人員院內問卷調查結果如下，請各職類自行檢視需加強部分，如需院方協助請提出。\n(1)教師端：部份反映教學與臨床作業衝突、資源不足及教學技巧有精進空間。\n(2)學員端：反映課程緊湊、部分教師教學技巧需強化、學習時間與排班間彈性不足。\n2.互動式教材─哈瑪星電子書之試用，經彙整使用者之意見評估，決議暫不採購，另將評估3D Vista互動式教材，預定於8月15日邀請林口長庚醫院分享應用經驗，歡迎各單位踴躍參與。\n3.藥劑部已將「生活型態醫學」導入實習生及PGY訓練計畫，請各職類參閱。\n4.追認通過「藥師臨床技能測驗考官認證要點」修訂。\n5.5月24日藥劑部與台灣藥學會國際發展協會共同舉辦「跨科整合心臟照護研討會─藥師、心腎、心腫之協作心篇章」已順利完成，與會者均給予正向實質回饋與高滿意度。"
+                            },
+                            {
+                                title: "四、教師培育中心",
+                                content: "114年度院級優良教師評選作業已展開，預定9月份公佈當選名單並進行表揚。"
+                            },
+                            {
+                                title: "五、住院醫師訓練組─追蹤各科部CBME推動進度",
+                                content: "1.各科部CCC(臨床能力委員會)建立進度：目前13個科部已完成，10個科部尚在建立，醫事職類10個職類已完成。\n2.請各科部定期召開CCC(建議每半年一次)，明定評量指標與回饋機制，並落實住院醫師個別評量與歷程紀錄。\n3.分享神經外科完整的制度與雷達圖追蹤機制，具體可供他科參考。"
+                            },
+                            {
+                                title: "六、通過6月份論文發表相關獎勵申請共174件",
+                                content: ""
+                            }
+                        ]
+                    },
+                    {
+                        title: "伍、臨時動議",
+                        content: [
+                            {
+                                title: "一、PGY醫師建議優化課程資訊整合方式",
+                                content: "以利瀏覽，教學中心已著手規劃改善。"
+                            },
+                            {
+                                title: "二、外科醫師反映實驗動物資源限制問題",
+                                content: "因實驗動物資源限制致臨床技能訓練次數受限，目前實驗動物及技能中心除了開發模擬教具可供練習外，另亦鼓勵科部提出訓練計畫需求，中心將全力支援訓練。"
+                            }
+                        ]
+                    },
+                    {
+                        title: "陸、下次會議追蹤事項",
+                        content: "無"
+                    },
+                    {
+                        title: "柒、主席結論",
+                        content: "略"
+                    },
+                    {
+                        title: "捌、散會",
+                        content: "13時40分"
+                    }
+                ]
+            },
+            {
+                date: "2025-06",
+                title: "114年06月醫學教育委員會紀錄",
+                meetingDate: "114年06月11日（星期三）中午12時30分",
+                location: "第五醫療大樓五樓552會議室", 
+                chairman: "陳志成",
+                content: [
+                    {
+                        title: "壹、主席報告",
+                        content: "略"
+                    },
+                    {
+                        title: "貳、上次會議追蹤事項", 
+                        content: "略"
+                    },
+                    {
+                        title: "參、本次會議報告及討論事項",
+                        content: [
+                            {
+                                title: "一、因應臨床人力持續吃緊，並參酌多家醫學中心之醫師升等規範，經討論後通過修訂「備任主治醫師升等作業指導書」",
+                                content: "修訂重點為升等所需之論文條件如下：\n1.備任主治醫師於住院醫師訓練期間，須以第一作者或通訊作者身分，並以本院名義至少發表一篇非SCI(含以上)之病例報告、原著或綜論之醫學論文(Case Report、Original article或Review Article)。\n2.若科部基於醫療人才特殊需求，得專案簽呈提報院方審核。"
+                            },
+                            {
+                                title: "二、臨床技能中心",
+                                content: "6月7日「OSCE考官培訓工作坊」順利完成辦理，與會者均給予正向實質回饋與高滿意度。"
+                            },
+                            {
+                                title: "三、實習醫學生組",
+                                content: "1.中山醫學大學已將6月學生所屬臨床教師匯入學習護照系統，請臨床教師於收到系統寄送評估通知信後，協助登入系統完成評分回饋作業。\n2.國立中山大學後醫學系與中山醫學大學將於12月接受TMAC評鑑，並安排至本院訪視，請科部配合辦理。\n(1)國立中山大學後醫學系預計訪視日期：12月10日或11日。\n(2)中山醫學大學預計訪視期間：12月16日至19日，具體日期待校方通知。"
+                            },
+                            {
+                                title: "四、教師培育中心",
+                                content: "訂於8月31日舉辦「台南市醫師公會暨奇美醫院秋季旅遊」，活動地點為東勢林場，凡具醫師公會會員資格者及其直系眷屬皆可免費參加，歡迎踴躍報名。"
+                            },
+                            {
+                                title: "五、醫事人員訓練組",
+                                content: "因應二年期教學訓練計畫課程指引增列「高齡照護識能」及「韌性醫療」課程，經教學中心初步盤點，目前院內實體與線上影音課程已充足，現階段毋須另設共通性課程，倘後續執行計畫有需求，將系統性開課予以支持。"
+                            },
+                            {
+                                title: "六、教學中心",
+                                content: "1.4月18日「奇美醫院與奇美博物館引導式藝術觀察課程」順利完成辦理，與會者均給予正向實質回饋與高滿意度。\n2.本院敘事醫學系列競賽「醫療的瞬間・永恆的感動」共徵得102件作品(醫療人文短影音27件及攝影75件)，評審團隊包含院內外專業人士，預計7月份進行頒獎。\n3.預定於二五空橋設置「奇美暖心角」策展空間，展出奇美博物館精選畫作及本次競賽作品，展期自7月至12月，歡迎同仁參觀。\n4.組隊參加「國家臨床醫學教育獎(NCMEA)」競賽，參賽隊伍分別為：實證醫學類─實證臨床組共4組；擬真情境類─急重症照護組1組、新人組1組。\n5.因應醫策會新增「國家臨床醫學教育獎(NCMEA)」，修訂「院外教學暨教學品質改善競賽敘獎管理程序書」，修訂要點如下：\n(1)每組敘獎人員上限由8人調整為10人。\n(2)新增實證醫學類與擬真情境類競賽敘獎。\n(3)新增台灣醫學教育學會、台灣擬真醫學教育學會及台灣醫事聯合臨床技能發展學會等三大學會所舉辦全國性教學競賽之佳作獎敘獎。"
+                            },
+                            {
+                                title: "七、通過5月份論文發表相關獎勵申請共129件",
+                                content: ""
+                            }
+                        ]
+                    },
+                    {
+                        title: "伍、臨時動議",
+                        content: "無"
+                    },
+                    {
+                        title: "伍、下次會議追蹤事項",
+                        content: "無"
+                    },
+                    {
+                        title: "陸、主席結論",
+                        content: "略"
+                    },
+                    {
+                        title: "柒、散會",
+                        content: "12時55分"
+                    }
+                ]
+            },
+            {
+                date: "2025-05",
+                title: "114年05月醫學教育委員會紀錄",
+                meetingDate: "114年05月14日（星期三）中午12時30分",
+                location: "第五醫療大樓五樓552會議室",
+                chairman: "陳志成", 
+                content: [
+                    {
+                        title: "壹、頒獎表揚第一季(1-3月)病歷書寫成績優良實習醫學生得獎者",
+                        content: "(附件一)"
+                    },
+                    {
+                        title: "貳、主席報告",
+                        content: "為鼓勵同仁積極參與醫學會議並發表論文，相關補助規範經兩次經營決策委員會討論，已於4月24日正式通過，適用對象為主治醫師及醫事人員，期盼藉由制度性支持，促進醫學交流與學術貢獻，進一步提升本院專業能量與對外影響力。"
+                    },
+                    {
+                        title: "參、上次會議追蹤事項",
+                        content: [
+                            {
+                                title: "近期實驗動物訓練成果及未來規劃",
+                                content: "一、今年首場實驗動物訓練已於3月27日順利辦理，訓練項目涵蓋外科系手術訓練、心臟血管外科ECMO體外循環訓練及內科系胃鏡教學等，有效提升豬隻使用效率並發揮其教學價值。\n二、本年度尚規劃4場次訓練，分別於6月19日、7月、11月及12月辦理，相關資訊將提前公告以利各科部安排參與。\n三、微創手術訓練對外科醫師的專業發展至關重要，預計明年度增辦至8場訓練課程，並新增Microsurgery訓練項目；為落實動物實驗3R原則，將定期彙整各科部的訓練需求，統一安排課程場次，確保豬隻有效利用。"
+                            }
+                        ]
+                    },
+                    {
+                        title: "肆、本次會議報告及討論事項",
+                        content: [
+                            {
+                                title: "一、主治醫師及醫事人員參加醫學會議獎勵修訂案",
+                                content: "1.依據114年4月24日經營決策委員會會議決議，公告通過修訂「主治醫師參加國外醫學會議獎勵作業指導書」及「醫事人員國外出差及受訓費用支付作業指導書」(附件二)，自114年5月1日起施行。\n2.修訂要點如下：\n(1)補助範圍：包括往返機票(經濟艙為準)、報名費及生活費等，皆需檢據核銷。生活費補助依「中央政府各機關派赴國外各地區出差人員生活費日支數額表」辦理。\n(2)補助原則：主治醫師以一年二次為限；但申請第二次時，報告內容須與第一次非完全相同，且需檢附第二次發表之完稿論文報告供審核參考，每篇文章僅限補助一位作者。醫事人員以一年一次為限。\n(3)三大世界性學會之補助規範：科部/職類提三大世界性學會之建議，由醫教會核定後公告。受邀演講、擔任座長及發表口頭報告全額補助；海報發表補助80%。參加前一年或參加後二年內需產出與出國報告題目一致的SCI期刊論文。每次申請出國前，必須確認上一次補助出國的論文已經出刊或是已獲接受。\n差旅費報支方式：\na.已產出SCI期刊論文者，可依相應憑證進行核銷。\nb.尚未產出SCI期刊論文者，則先以非三大世界性醫學會的補助標準報支差旅費。因憑證效期限制，待期刊論文刊登後，再以領據報支請款其補助差額，此差額需列個人所得並扣繳相關稅款。\n受邀演講及擔任座長：不受二年內需產出SCI期刊論文之限制，皆全額補助。\n(4)非三大世界性學會補助金額上限：\n受邀演講、擔任座長及發表口頭報告：亞洲地區新台幣四萬元，歐美及其他地區新台幣五萬元。\n海報發表：亞洲地區新台幣三萬元，歐美及其他地區新台幣四萬元。\n(5)醫事人員赴國外短期參訪、研討會之補助金額上限：亞洲地區新台幣三萬，歐美及其他地區新台幣四萬元。\n(6)院方指派任務型之會議，另上簽呈核定補助。"
+                            },
+                            {
+                                title: "二、臨床技能中心",
+                                content: "1.截至4月底，「動脈導管A-Line置放訓練課程」共辦理25場次，完訓者97人(應訓學員118人，參與率達82.2%)，尚有21名學員未完成訓練，請所屬科部協助督促學員儘速完成。\n2.4月27日「擬真模型縫合手術競賽活動」已圓滿完成，並已於4月30日外科部晨會頒獎表揚得獎同仁。未來競賽將評估與達文西機械手臂廠商合作借用模擬機，提供年輕住院醫師提早接觸並熟悉達文西機械手臂之操作，模擬機提供豐富練習操作模組，有助於強化住院醫師的臨床技能操作及提升學習成效。"
+                            },
+                            {
+                                title: "三、實習醫學生組",
+                                content: "1.依4月29日中山醫學大學蒞院訪視，說明該校年底TMAC評鑑相關事項：\n(1)學校已完成內/外/婦/兒/急五大科的共同教學大綱，請本院相對應科部教學負責人依此大綱基本要求修訂各科教學計畫。\n(2)請內/外/婦/兒/急之教學負責人務必定期參加學校舉辦之五大科線上會議，以確保訓練一致性、教學內容等同性及評估等效性，並掌握TMAC評鑑最新資訊。\n(3)學校將增聘本院具部定教職且在臨床上有實際教導學生的醫師，作為該校之兼任教師，共計35位。\n(4)為協助本院教師使用學校學習護照系統，已提供UGY各科教學負責人名單給學校，學校將於114學年度6月匯入系統並安排操作說明會，請科部協助配合。\n2.國防醫學院將於10-11月接受TMAC評鑑，為符合評鑑要求「落實訓練一致性、教學內容等同性及評估等效性」和「醫學生應具備可被評定且定義之專業素養精神」，學校已修訂實習考核表並加入專業素養項目，自114學年度6月啟用，請科部協助配合使用新版考核表，並於9月回覆實習成績，以利學校分析各實習醫院成績分布情形。\n3.預計今年下半年安排至國防醫學院及高雄醫學大學舉辦實習說明會，確定日期待學校回覆。"
+                            },
+                            {
+                                title: "四、教學中心",
+                                content: "1.追蹤第一季(1-3月)病歷審查結果及改善方案，並公告病歷書寫優良住院醫師名單及指正優良之主治醫師名單(附件三)，將於醫務會議頒獎表揚。\n2.提報教學醫院評鑑建議事項之改善方案：\n(1)各負責單位提報改善方案彙整如附件四，請各負責單位依規劃進度執行，並將於每季追蹤執行成效。\n(2)評鑑委員綜合意見建議事項包含：AI在病歷綜整或修改的應用、E-Portfolio系統整合、教學型醫事人員獎勵機制調整、及更具效益的出國進修計畫擬定等，後續將依提報改善方案進行推動與執行。"
+                            },
+                            {
+                                title: "五、醫事人員訓練組",
+                                content: "1.追蹤多元化教材軟體評估進度：\n(1)哈瑪星電子書平台：廠商已於4月8日辦理院內說明會，並提供15組帳號供各醫事職類試用，試用期至5月20日止，後續將彙整各職類使用回饋意見，作為是否採購之評估依據。\n(2)3D Vista軟體：預計於8月15日邀請林口長庚醫院劉珮琪護理師蒞院，分享此軟體於教學應用之實務經驗，俾利進一步了解與評估其導入可行性。\n2.臨床醫事人員培訓計畫相關事宜：\n(1)因應社會人口結構高齡化及醫療環境變化，衛生福利部於二年期教學訓練計畫課程指引中新增「高齡照護識能」、「外傷急救照護」、「感染管制」及「韌性醫療」等課程。經各職類逐一檢視單位內既有課程及彙整需協助項目，尤「高齡照護識能」及「韌性醫療」共通性課程較需院方資源，後續將由教學中心統籌盤點院內實體及影音課程，並擬與開課單位共同系統性規劃辦理。\n(2)因應上述課程指引之修訂，衛生福利部已於3月辦理3場說明會，並彙整與會者提問與建議，後續經各職類共識會議討論確認，已公告計畫審查注意事項，本院將依公告時程，配合參與第二梯次(8月)計畫修訂送審作業。\n(3)因應質性指標1「落實能力導向醫學教育執行情形」之評分基準，今年度將於7月26日上午辦理「CBME臨床教學實踐與展望研討會」，歡迎踴躍參與。\n3.營養職類於4月13日辦理「營養科三院區共識營一藝術及遊戲如何融入醫學教育」，與會者均給予正向實質回饋與高滿意度。\n4.台灣醫事聯合臨床技能發展學會訂於9月20日舉辦「2025年會員大會曁學術研討會」，並同步辦理「海報論文徵稿」及「OSCE教案甄選」，截稿日為7月21日，資訊詳見網頁公告，歡迎踴躍投稿。"
+                            },
+                            {
+                                title: "六、住院醫師訓練組",
+                                content: "1.因應教學醫院評鑑基準研修方向，本院現積極推動以勝任能力為導向的醫學教育(CBME)制度，主要涵蓋可信賴的專業活動(EPA)、里程碑(Milestone)和臨床能力委員會(CCC)，請科部配合落實相關執行作業。\n2.各科部實施進展如附件五，並以外科部及神經外科為例，說明臨床能力委員會(CCC)執行的建議方式，供尚未執行CCC之科部參閱比照辦理。\n3.後續將定期追蹤各科部CBME推動進度，並研議將CCC評量結果納入住院醫師年度考核項目之一。"
+                            },
+                            {
+                                title: "七、PGY醫師訓練組",
+                                content: "114年度PGY醫師甄試本院滿額招收48位，錄取醫師中近八成來自南部地區，其中56.3%來自台南。為優化未來招生策略，建議持續強化對嘉義、台南及高雄等地區之招生宣傳，並積極鼓勵醫學生至本院進行長期或短期實習。藉由提供優質之訓練環境與學習支持，提升學生對本院之認同與好感，進而有助於日後PGY醫師及住院醫師之招募成效。"
+                            },
+                            {
+                                title: "八、實證醫學暨醫療政策中心",
+                                content: "1.因應醫策會擬真情境類與實證醫學類競賽自114年起由「國家醫療品質獎」改為「國家臨床醫學教育獎」，故權責單位自品質管理中心調整為教學中心，並預計將前述兩項競賽獎勵增修納入「院外教學競賽敘獎管理程序書」。\n2.實證醫學部分課程已重新調整，以符合AI數位方式，同時設計課程相關資料收集，以為醫學教育研究鋪路。惟初步觀察PGY醫師對課程學習動機不足，課前資料學習與前後測成效有限，後續將持續優化課程設計，以提升學習成效。"
+                            }
+                        ]
+                    },
+                    {
+                        title: "伍、臨時動議",
+                        content: "無"
+                    },
+                    {
+                        title: "陸、下次會議追蹤事項",
+                        content: "無"
+                    },
+                    {
+                        title: "柒、主席結論",
+                        content: "略"
+                    },
+                    {
+                        title: "捌、散會",
+                        content: "14時00分"
+                    }
+                ]
+            },
+            {
+                date: "2025-04",
+                title: "114年04月醫學教育委員會紀錄", 
+                meetingDate: "114年04月09日（星期三）中午12時30分",
+                location: "第五醫療大樓五樓552會議室",
+                chairman: "陳志成",
+                content: [
+                    {
+                        title: "壹、頒獎表揚1-2月份實習醫學生選出「值班教學優秀獎」得獎者",
+                        content: "(附件一)"
+                    },
+                    {
+                        title: "貳、主席報告",
+                        content: "感謝本次獲選之優秀值班教學醫師對於實習醫學生教學的積極參與與辛勞投入！教學品質的持續提升是院方當前教學發展重點之一，期盼透過各位的努力，進一步強化本院的教學文化，持續累積成果。"
+                    },
+                    {
+                        title: "參、上次會議追蹤事項",
+                        content: "略"
+                    },
+                    {
+                        title: "肆、本次會議報告及討論事項",
+                        content: [
+                            {
+                                title: "一、住院醫師訓練組",
+                                content: "追蹤114年第1次住院醫師專科醫師模擬考結果，請醫師成績低於70分之科部主管(尤為兒科部)協助加強輔導。"
+                            },
+                            {
+                                title: "二、教學中心", 
+                                content: "衛生福利部113年度教學醫院評鑑結果意見表已公告，請各負責單位於4月21日前回覆改善方案，並於未來每季追蹤改善執行進度。重申住診教學作業原則，請科部主管協助落實宣達。"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let currentRecords = [];
+        let isAllExpanded = false;
+
+        // 初始化頁面
+        function initializePage() {
+            currentRecords = [...meetingRecords];
+            displayRecords(currentRecords);
+        }
+
+        // 顯示會議記錄
+        function displayRecords(records) {
+            const contentSection = document.getElementById('contentSection');
+            
+            if (records.length === 0) {
+                contentSection.innerHTML = `
+                    <div class="no-results">
+                        <h3>📋 未找到符合條件的會議記錄</h3>
+                        <p>請調整搜尋條件後重新查詢</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            records.forEach((record, recordIndex) => {
+                html += `
+                    <div class="meeting-record" data-record-index="${recordIndex}">
+                        <div class="meeting-header" onclick="toggleMeetingRecord(${recordIndex})">
+                            <h2>${record.title}</h2>
+                            <div class="meeting-meta">
+                                <span>📅 ${record.meetingDate}</span>
+                                <span>📍 ${record.location}</span>
+                                <span>👤 主席：${record.chairman}</span>
+                            </div>
+                        </div>
+                        <div class="meeting-content" id="meeting-content-${recordIndex}" style="display: block;">
+                            ${generateContentBlocks(record.content, recordIndex)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            contentSection.innerHTML = html;
+        }
+
+        // 生成內容區塊
+        function generateContentBlocks(content, recordIndex) {
+            let html = '';
+            content.forEach((section, sectionIndex) => {
+                const blockId = `block-${recordIndex}-${sectionIndex}`;
+                html += `
+                    <div class="content-block">
+                        <div class="block-header" onclick="toggleContentBlock('${blockId}')">
+                            <h3>${section.title}</h3>
+                            <span class="toggle-icon expanded" id="icon-${blockId}">▼</span>
+                        </div>
+                        <div class="block-content" id="${blockId}" style="display: block;">
+                `;
+                
+                if (Array.isArray(section.content)) {
+                    section.content.forEach(subSection => {
+                        html += `
+                            <div class="sub-block">
+                                <h4>${subSection.title}</h4>
+                                <div>${formatContent(subSection.content)}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += formatContent(section.content || '');
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        // 格式化內容
+        function formatContent(content) {
+            if (!content) return '';
+            return content.replace(/\n/g, '<br>');
+        }
+
+        // 切換會議記錄顯示/隱藏
+        function toggleMeetingRecord(index) {
+            const content = document.getElementById(`meeting-content-${index}`);
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 切換內容區塊顯示/隱藏
+        function toggleContentBlock(blockId) {
+            const content = document.getElementById(blockId);
+            const icon = document.getElementById(`icon-${blockId}`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▼';
+                icon.classList.add('expanded');
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▶';
+                icon.classList.remove('expanded');
+            }
+        }
+
+        // 搜尋功能
+        function performSearch() {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const keyword = document.getElementById('keyword').value.toLowerCase().trim();
+
+            let filteredRecords = [];
+
+            if (keyword) {
+                // 如果有關鍵字，只顯示匹配的區塊
+                meetingRecords.forEach(record => {
+                    // 日期篩選
+                    if (dateFrom && record.date < dateFrom) return;
+                    if (dateTo && record.date > dateTo) return;
+                    
+                    // 搜尋匹配的內容區塊
+                    const matchedContent = [];
+                    
+                    record.content.forEach(section => {
+                        let isMatched = false;
+                        let matchedSection = { ...section };
+                        
+                        // 檢查標題是否匹配
+                        if (section.title.toLowerCase().includes(keyword)) {
+                            isMatched = true;
+                            matchedSection.title = section.title;
+                        }
+                        
+                        // 檢查內容是否匹配
+                        if (Array.isArray(section.content)) {
+                            const matchedSubContent = [];
+                            section.content.forEach(subSection => {
+                                if (subSection.title.toLowerCase().includes(keyword) || 
+                                    subSection.content.toLowerCase().includes(keyword)) {
+                                    matchedSubContent.push(subSection);
+                                    isMatched = true;
+                                }
+                            });
+                            if (matchedSubContent.length > 0) {
+                                matchedSection.content = matchedSubContent;
+                            }
+                        } else if (typeof section.content === 'string') {
+                            if (section.content.toLowerCase().includes(keyword)) {
+                                isMatched = true;
+                                matchedSection.content = section.content;
+                            }
+                        }
+                        
+                        if (isMatched) {
+                            matchedContent.push(matchedSection);
+                        }
+                    });
+                    
+                    if (matchedContent.length > 0) {
+                        const matchedRecord = {
+                            ...record,
+                            content: matchedContent
+                        };
+                        filteredRecords.push(matchedRecord);
+                    }
+                });
+                
+                // 高亮顯示關鍵字
+                filteredRecords = highlightKeyword(filteredRecords, keyword);
+            } else {
+                // 沒有關鍵字時，按日期篩選顯示完整記錄
+                filteredRecords = meetingRecords.filter(record => {
+                    if (dateFrom && record.date < dateFrom) return false;
+                    if (dateTo && record.date > dateTo) return false;
+                    return true;
+                });
+            }
+
+            currentRecords = filteredRecords;
+            displayRecords(currentRecords);
+            
+            // 顯示搜尋結果資訊
+            showSearchResults(filteredRecords.length, keyword);
+        }
+
+        // 高亮關鍵字
+        function highlightKeyword(records, keyword) {
+            return records.map(record => {
+                const highlightedRecord = JSON.parse(JSON.stringify(record));
+                
+                function highlightText(text) {
+                    if (typeof text !== 'string') return text;
+                    const regex = new RegExp(`(${keyword})`, 'gi');
+                    return text.replace(regex, '<span class="highlight">$1</span>');
+                }
+                
+                function highlightContent(content) {
+                    if (Array.isArray(content)) {
+                        return content.map(item => {
+                            if (item.title) item.title = highlightText(item.title);
+                            if (item.content) item.content = highlightContent(item.content);
+                            return item;
+                        });
+                    }
+                    return highlightText(content);
+                }
+                
+                highlightedRecord.title = highlightText(record.title);
+                highlightedRecord.content = highlightContent(record.content);
+                
+                return highlightedRecord;
+            });
+        }
+
+        // 顯示搜尋結果資訊
+        function showSearchResults(count, keyword) {
+            const resultsInfo = document.getElementById('resultsInfo');
+            if (keyword) {
+                resultsInfo.innerHTML = `🔍 搜尋「<strong>${keyword}</strong>」找到 <strong>${count}</strong> 筆會議記錄`;
+                resultsInfo.style.display = 'block';
+            } else {
+                resultsInfo.style.display = 'none';
+            }
+        }
+
+        // 清除搜尋
+        function clearAllFilters() {
+            document.getElementById('dateFrom').value = '2025-01';
+            document.getElementById('dateTo').value = '2025-07';
+            document.getElementById('keyword').value = '';
+            document.getElementById('resultsInfo').style.display = 'none';
+            
+            currentRecords = [...meetingRecords];
+            displayRecords(currentRecords);
+        }
+
+        // 展開全部
+        function expandAllBlocks() {
+            const allBlocks = document.querySelectorAll('.block-content');
+            const allIcons = document.querySelectorAll('.toggle-icon');
+            
+            allBlocks.forEach(block => {
+                block.style.display = 'block';
+            });
+            
+            allIcons.forEach(icon => {
+                icon.textContent = '▼';
+                icon.classList.add('expanded');
+            });
+            
+            isAllExpanded = true;
+        }
+
+        // 收合全部
+        function collapseAllBlocks() {
+            const allBlocks = document.querySelectorAll('.block-content');
+            const allIcons = document.querySelectorAll('.toggle-icon');
+            
+            allBlocks.forEach(block => {
+                block.style.display = 'none';
+            });
+            
+            allIcons.forEach(icon => {
+                icon.textContent = '▶';
+                icon.classList.remove('expanded');
+            });
+            
+            isAllExpanded = false;
+        }
+
+        // 頁面載入時初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            
+            // 綁定 Enter 鍵搜尋
+            document.getElementById('keyword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
