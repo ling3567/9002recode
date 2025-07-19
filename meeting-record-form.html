@@ -75,7 +75,7 @@
             meetingData.currentMeetingItems = combinedItems.trim();
 
             try {
-                const response = await fetch('https://script.google.com/macros/s/你的AppsScript網址/exec', {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec', {
                     method: 'POST',
                     body: JSON.stringify({ contents: meetingData }),
                     headers: { 'Content-Type': 'application/json' }
