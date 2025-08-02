@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會議內容查詢</title>
+    <title>會議紀錄查詢與管理</title>
     <!-- 引入 Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -34,10 +34,26 @@
             border-radius: 4px;
             font-weight: bold;
         }
+        /* 登入視窗背景 */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999; /* 確保在最上層 */
+        }
+        /* 登入視窗內容 */
+        .modal-content {
+            z-index: 1000; /* 確保在最上層 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8">
+
+    <!-- 新增會議內容按鈕 (固定在右上角) -->
+    <a id="addMeetingButton"
+       class="fixed top-4 right-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out text-base z-50 cursor-pointer">
+        新增會議內容
+    </a>
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8 mt-16 md:mt-4">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">會議內容查詢</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -74,8 +90,35 @@
         <!-- 查詢結果將顯示在這裡 -->
     </div>
 
+    <!-- 登入視窗 -->
+    <div id="loginModal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm modal-content relative">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">管理員登入</h2>
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">帳號</label>
+                <input type="text" id="username" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-6">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
+                <input type="password" id="password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <p id="loginMessage" class="text-red-600 text-sm mb-4 hidden text-center"></p>
+            <div class="flex justify-end gap-3">
+                <button id="cancelLoginButton"
+                        class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    取消
+                </button>
+                <button id="loginButton"
+                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    登入
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 查詢功能相關元素
             const keywordInput = document.getElementById('keywordInput');
             const startDateInput = document.getElementById('startDateInput');
             const endDateInput = document.getElementById('endDateInput');
@@ -86,8 +129,21 @@
             const messageText = document.getElementById('messageText');
             const initialMessage = document.getElementById('initialMessage');
 
+            // 登入功能相關元素
+            const addMeetingButton = document.getElementById('addMeetingButton');
+            const loginModal = document.getElementById('loginModal');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginButton = document.getElementById('loginButton');
+            const cancelLoginButton = document.getElementById('cancelLoginButton');
+            const loginMessage = document.getElementById('loginMessage');
+
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec';
+            // 會議內容輸入頁面的 URL (請確保此檔案存在且名稱正確)
+            const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html'; // 更新為新的檔案名稱
+
+            // --- 查詢功能相關邏輯 ---
 
             // 顯示訊息的輔助函數
             function showMessage(text, type = 'info') {
@@ -110,7 +166,10 @@
             // 關鍵字高亮函數
             function highlightKeyword(text, keyword) {
                 if (!keyword || !text) return text;
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); // 全局、不區分大小寫
+                // 使用正則表達式進行全局、不區分大小寫的替換
+                // 確保特殊字元被正確轉義
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedKeyword, 'gi');
                 return text.replace(regex, match => `<span class="highlight">${match}</span>`);
             }
 
@@ -203,6 +262,58 @@
             keywordInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     searchButton.click();
+                }
+            });
+
+            // --- 登入功能相關邏輯 ---
+
+            // 點擊新增會議內容按鈕，顯示登入視窗
+            addMeetingButton.addEventListener('click', () => {
+                loginModal.classList.remove('hidden');
+                loginModal.classList.add('flex'); // 使用 flex 讓 modal 內容居中
+                usernameInput.value = ''; // 清空輸入框
+                passwordInput.value = ''; // 清空輸入框
+                loginMessage.classList.add('hidden'); // 隱藏錯誤訊息
+                usernameInput.focus(); // 自動聚焦到帳號輸入框
+            });
+
+            // 點擊登入視窗的背景或取消按鈕，隱藏登入視窗
+            loginModal.addEventListener('click', (event) => {
+                if (event.target === loginModal) { // 只有點擊背景才關閉
+                    loginModal.classList.add('hidden');
+                    loginModal.classList.remove('flex');
+                }
+            });
+            cancelLoginButton.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                loginModal.classList.remove('flex');
+            });
+
+            // 登入按鈕點擊事件
+            loginButton.addEventListener('click', () => {
+                const username = usernameInput.value;
+                const password = passwordInput.value;
+
+                if (username === 'cmh9002' && password === 'cmh9002') {
+                    loginMessage.classList.add('hidden');
+                    loginModal.classList.add('hidden');
+                    loginModal.classList.remove('flex');
+                    window.location.href = MEETING_INPUT_PAGE_URL; // 導向新增會議頁面
+                } else {
+                    loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
+                    loginMessage.classList.remove('hidden');
+                }
+            });
+
+            // 允許在登入視窗中按 Enter 鍵進行登入
+            usernameInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    passwordInput.focus();
+                }
+            });
+            passwordInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    loginButton.click();
                 }
             });
         });
