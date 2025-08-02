@@ -27,23 +27,40 @@
         .scrollable-content::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        /* 關鍵字高亮樣式 */
+        .highlight {
+            background-color: #fde68a; /* 淺黃色背景 */
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">會議內容查詢</h1>
 
-        <div class="flex flex-col sm:flex-row gap-4 mb-6">
-            <input type="text" id="keywordInput" placeholder="輸入關鍵字查詢 (例如: 報告, 臨時動議, 會議名稱)"
-                   class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            <button id="searchButton"
-                    class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
-                搜尋會議
-            </button>
-            <button id="showAllButton"
-                    class="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
-                顯示所有會議
-            </button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <input type="text" id="keywordInput" placeholder="輸入關鍵字查詢 (例如: 報告, 臨時動議)"
+                   class="col-span-1 md:col-span-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+
+            <div class="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-2">
+                <input type="date" id="startDateInput"
+                       class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <input type="date" id="endDateInput"
+                       class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-1">
+                <button id="searchButton"
+                        class="flex-grow px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    搜尋會議
+                </button>
+                <button id="showAllButton"
+                        class="flex-grow px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    顯示所有會議
+                </button>
+            </div>
         </div>
 
         <!-- 訊息顯示區塊 -->
@@ -53,13 +70,15 @@
     </div>
 
     <div id="resultsContainer" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 flex-grow scrollable-content overflow-y-auto">
-        <p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字或點擊「顯示所有會議」來查詢。</p>
+        <p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>
         <!-- 查詢結果將顯示在這裡 -->
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const keywordInput = document.getElementById('keywordInput');
+            const startDateInput = document.getElementById('startDateInput');
+            const endDateInput = document.getElementById('endDateInput');
             const searchButton = document.getElementById('searchButton');
             const showAllButton = document.getElementById('showAllButton');
             const resultsContainer = document.getElementById('resultsContainer');
@@ -88,14 +107,28 @@
                 }, 3000);
             }
 
+            // 關鍵字高亮函數
+            function highlightKeyword(text, keyword) {
+                if (!keyword || !text) return text;
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); // 全局、不區分大小寫
+                return text.replace(regex, match => `<span class="highlight">${match}</span>`);
+            }
+
             // 執行查詢的函數
-            async function performSearch(keyword = '') {
+            async function performSearch(keyword = '', startDate = '', endDate = '') {
                 initialMessage.classList.add('hidden'); // 隱藏初始訊息
                 resultsContainer.innerHTML = ''; // 清空之前的結果
                 showMessage('正在查詢會議內容，請稍候...', 'info');
 
                 try {
-                    const url = `${APPS_SCRIPT_WEB_APP_URL}?keyword=${encodeURIComponent(keyword)}`;
+                    // 構建 URL 參數
+                    let url = `${APPS_SCRIPT_WEB_APP_URL}?`;
+                    const params = [];
+                    if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
+                    if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+                    if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+                    url += params.join('&');
+
                     const response = await fetch(url);
                     const result = await response.json();
 
@@ -105,23 +138,32 @@
                             result.data.forEach(meeting => {
                                 const meetingCard = document.createElement('div');
                                 meetingCard.className = 'bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 mb-4';
+
+                                // 處理多行文本並高亮關鍵字
+                                const formatAndHighlight = (content, kw) => {
+                                    if (!content) return '無';
+                                    // 將換行符轉換為 <br> 標籤
+                                    const formattedContent = content.replace(/\n/g, '<br>');
+                                    return highlightKeyword(formattedContent, kw);
+                                };
+
                                 meetingCard.innerHTML = `
-                                    <h3 class="text-xl font-semibold text-gray-800 mb-2">${meeting['會議名稱'] || '無會議名稱'}</h3>
-                                    <p class="text-gray-600 mb-1"><strong>日期:</strong> ${meeting['會議日期'] || '無'}</p>
-                                    <p class="text-gray-600 mb-1"><strong>時間:</strong> ${meeting['開始時間'] || '無'} - ${meeting['結束時間'] || '無'}</p>
-                                    <p class="text-gray-600 mb-1"><strong>地點:</strong> ${meeting['會議地點'] || '無'}</p>
-                                    <p class="text-gray-600 mb-1"><strong>主席:</strong> ${meeting['主席'] || '無'}</p>
-                                    <div class="mt-4 border-t border-gray-200 pt-4">
-                                        <p class="text-gray-700 mb-2"><strong>壹、頒獎表揚:</strong> ${meeting['壹、頒獎表揚'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>貳、主席報告:</strong> ${meeting['貳、主席報告'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>參、上次會議追蹤事項:</strong> ${meeting['參、上次會議追蹤事項'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>肆、本次會議報告及討論事項:</strong> ${meeting['肆、本次會議報告及討論事項'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>伍、臨時動議:</strong> ${meeting['伍、臨時動議'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>陸、下次會議追蹤事項:</strong> ${meeting['陸、下次會議追蹤事項'] || '無'}</p>
-                                        <p class="text-gray-700 mb-2"><strong>柒、主席結論:</strong> ${meeting['柒、主席結論'] || '無'}</p>
+                                    <h3 class="text-xl font-semibold text-gray-800 mb-2">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
+                                    <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(meeting['會議日期'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(meeting['開始時間'] || '無', keyword)} - ${highlightKeyword(meeting['結束時間'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>主席:</strong> ${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
+                                    <div class="mt-4 border-t border-gray-200 pt-4 text-gray-700 text-sm">
+                                        <p class="mb-2"><strong>壹、頒獎表揚:</strong> ${formatAndHighlight(meeting['壹、頒獎表揚'], keyword)}</p>
+                                        <p class="mb-2"><strong>貳、主席報告:</strong> ${formatAndHighlight(meeting['貳、主席報告'], keyword)}</p>
+                                        <p class="mb-2"><strong>參、上次會議追蹤事項:</strong> ${formatAndHighlight(meeting['參、上次會議追蹤事項'], keyword)}</p>
+                                        <p class="mb-2"><strong>肆、本次會議報告及討論事項:</strong> ${formatAndHighlight(meeting['肆、本次會議報告及討論事項'], keyword)}</p>
+                                        <p class="mb-2"><strong>伍、臨時動議:</strong> ${formatAndHighlight(meeting['伍、臨時動議'], keyword)}</p>
+                                        <p class="mb-2"><strong>陸、下次會議追蹤事項:</strong> ${formatAndHighlight(meeting['陸、下次會議追蹤事項'], keyword)}</p>
+                                        <p class="mb-2"><strong>柒、主席結論:</strong> ${formatAndHighlight(meeting['柒、主席結論'], keyword)}</p>
                                     </div>
-                                    <p class="text-gray-500 text-sm mt-2"><strong>附件名稱:</strong> ${meeting['附件名稱'] || '無'}</p>
-                                    <p class="text-gray-500 text-sm"><strong>建立時間:</strong> ${meeting['建立時間'] || '無'}</p>
+                                    <p class="text-gray-500 text-sm mt-2"><strong>附件名稱:</strong> ${highlightKeyword(meeting['附件名稱'] || '無', keyword)}</p>
+                                    <p class="text-gray-500 text-sm"><strong>建立時間:</strong> ${highlightKeyword(meeting['建立時間'] || '無', keyword)}</p>
                                 `;
                                 resultsContainer.appendChild(meetingCard);
                             });
@@ -144,13 +186,17 @@
             // 搜尋按鈕點擊事件
             searchButton.addEventListener('click', () => {
                 const keyword = keywordInput.value.trim();
-                performSearch(keyword);
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                performSearch(keyword, startDate, endDate);
             });
 
             // 顯示所有會議按鈕點擊事件
             showAllButton.addEventListener('click', () => {
                 keywordInput.value = ''; // 清空關鍵字輸入框
-                performSearch(''); // 傳遞空字串表示顯示所有
+                startDateInput.value = ''; // 清空日期輸入框
+                endDateInput.value = ''; // 清空日期輸入框
+                performSearch('', '', ''); // 傳遞空字串表示顯示所有
             });
 
             // 允許按 Enter 鍵進行搜尋
