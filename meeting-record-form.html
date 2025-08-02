@@ -1,116 +1,214 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>新增會議紀錄</title>
-  <style>
-    body {
-      font-family: 'Microsoft JhengHei';
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    h1 {
-      font-size: 28px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      padding: 10px 20px;
-      margin-right: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會議內容輸入</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 設定 Inter 字體 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* 淺灰色背景 */
+        }
+    </style>
 </head>
-<body>
-  <h1>新增會議紀錄</h1>
-  <p>建立詳細的會議記錄，追蹤重要決策與行動項目</p>
-  <form id="meetingForm">
-    <label for="meetingTitle">會議標題</label>
-    <input type="text" name="meetingTitle" required />
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">會議內容輸入</h1>
+        <form id="meetingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 會議名稱 -->
+            <div>
+                <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
+                <input type="text" id="meetingName" name="會議名稱" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="meetingDate">會議日期</label>
-    <input type="date" name="meetingDate" required />
+            <!-- 會議日期 -->
+            <div>
+                <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">會議日期</label>
+                <input type="date" id="meetingDate" name="會議日期" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="startTime">開始時間</label>
-    <input type="time" name="startTime" value="12:30" required />
+            <!-- 開始時間 -->
+            <div>
+                <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+                <input type="time" id="startTime" name="開始時間" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="endTime">結束時間</label>
-    <input type="time" name="endTime" required />
+            <!-- 結束時間 -->
+            <div>
+                <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+                <input type="time" id="endTime" name="結束時間" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="location">會議地點</label>
-    <input type="text" name="location" value="第五醫療大樓五樓552會議室" required />
+            <!-- 會議地點 -->
+            <div>
+                <label for="location" class="block text-sm font-medium text-gray-700 mb-1">會議地點</label>
+                <input type="text" id="location" name="會議地點"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="chairman">主席</label>
-    <input type="text" name="chairman" required />
+            <!-- 主席 -->
+            <div>
+                <label for="chairman" class="block text-sm font-medium text-gray-700 mb-1">主席</label>
+                <input type="text" id="chairman" name="主席"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <label for="awards">壹、頒獎表揚</label>
-    <textarea name="awards"></textarea>
+            <!-- 壹、頒獎表揚 -->
+            <div class="md:col-span-2">
+                <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
+                <textarea id="awards" name="壹、頒獎表揚" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="chairmanReport">貳、主席報告</label>
-    <textarea name="chairmanReport"></textarea>
+            <!-- 貳、主席報告 -->
+            <div class="md:col-span-2">
+                <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
+                <textarea id="chairmanReport" name="貳、主席報告" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="lastMeetingFollow">參、上次會議追蹤事項</label>
-    <textarea name="lastMeetingFollow"></textarea>
+            <!-- 參、上次會議追蹤事項 -->
+            <div class="md:col-span-2">
+                <label for="lastMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">參、上次會議追蹤事項</label>
+                <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="discussion">肆、本次會議報告及討論事項（標題+子項）</label>
-    <textarea name="discussion"></textarea>
+            <!-- 肆、本次會議報告及討論事項 -->
+            <div class="md:col-span-2">
+                <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">肆、本次會議報告及討論事項</label>
+                <textarea id="currentMeetingDiscussion" name="肆、本次會議報告及討論事項" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="temporaryMotion">伍、臨時動議</label>
-    <textarea name="temporaryMotion"></textarea>
+            <!-- 伍、臨時動議 -->
+            <div class="md:col-span-2">
+                <label for="adHocMotion" class="block text-sm font-medium text-gray-700 mb-1">伍、臨時動議</label>
+                <textarea id="adHocMotion" name="伍、臨時動議" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="nextMeetingFollow">陸、下次會議追蹤事項</label>
-    <textarea name="nextMeetingFollow"></textarea>
+            <!-- 陸、下次會議追蹤事項 -->
+            <div class="col-span-2">
+                <label for="nextMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">陸、下次會議追蹤事項</label>
+                <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="chairmanConclusion">柒、主席結論</label>
-    <textarea name="chairmanConclusion"></textarea>
+            <!-- 柒、主席結論 -->
+            <div class="md:col-span-2">
+                <label for="chairmanConclusion" class="block text-sm font-medium text-gray-700 mb-1">柒、主席結論</label>
+                <textarea id="chairmanConclusion" name="柒、主席結論" rows="3"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
 
-    <label for="attachment">附件名稱</label>
-    <input type="text" name="attachment" />
+            <!-- 附件名稱 -->
+            <div>
+                <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件名稱</label>
+                <input type="text" id="attachmentName" name="附件名稱"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-    <button type="reset">重設</button>
-    <button type="submit">儲存會議紀錄</button>
-  </form>
+            <!-- 建立時間 (自動填入) -->
+            <div>
+                <label for="creationTime" class="block text-sm font-medium text-gray-700 mb-1">建立時間</label>
+                <input type="datetime-local" id="creationTime" name="建立時間" readonly
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
+            </div>
 
-  <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec'; // 等你部署完成再換掉
+            <!-- 提交按鈕 -->
+            <div class="md:col-span-2 flex justify-center mt-6">
+                <button type="submit"
+                        class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    提交會議內容
+                </button>
+            </div>
+        </form>
 
-    document.getElementById('meetingForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
+        <!-- 訊息顯示區塊 -->
+        <div id="messageContainer" class="mt-6 p-4 rounded-md hidden">
+            <p id="messageText" class="text-center"></p>
+        </div>
+    </div>
 
-      const formData = new FormData(this);
-      const data = {};
-      formData.forEach((value, key) => {
-        data[key] = value;
-      });
-      data.timestamp = new Date().toISOString();
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('meetingForm');
+            const creationTimeInput = document.getElementById('creationTime');
+            const messageContainer = document.getElementById('messageContainer');
+            const messageText = document.getElementById('messageText');
 
-      const response = await fetch(scriptURL, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+            // !!! 請將這裡的 YOUR_WEB_APP_URL 替換為您部署 Apps Script 後獲得的網頁應用程式 URL !!!
+            const APPS_SCRIPT_WEB_APP_URL = 'YOUR_WEB_APP_URL';
 
-      if (response.ok) {
-        alert('資料已成功送出');
-        this.reset();
-      } else {
-        alert('資料送出失敗，請稍後再試');
-      }
-    });
-  </script>
+            // 自動填入建立時間為當前時間
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // 調整時區
+            creationTimeInput.value = now.toISOString().slice(0, 16);
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault(); // 防止表單預設提交行為
+
+                // 顯示載入訊息
+                messageText.textContent = '正在提交資料中，請稍候...';
+                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800'); // 載入中顏色
+
+                const formData = new FormData(form);
+                const meetingData = {};
+                for (let [key, value] of formData.entries()) {
+                    meetingData[key] = value;
+                }
+                meetingData['建立時間'] = creationTimeInput.value; // 確保建立時間被正確包含
+
+                console.log('準備提交的會議資料:', meetingData);
+
+                try {
+                    // 使用 fetch API 將資料 POST 到 Apps Script Web 應用程式
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST',
+                        // Apps Script 期望的是表單資料格式，而不是 JSON
+                        // 所以我們使用 URLSearchParams 來處理 FormData
+                        body: new URLSearchParams(meetingData),
+                        // 'Content-Type': 'application/x-www-form-urlencoded' 會由 URLSearchParams 自動設定
+                    });
+
+                    const result = await response.json(); // 解析 Apps Script 返回的 JSON
+
+                    if (result.success) {
+                        messageText.textContent = '會議內容已成功儲存到 Google 試算表！';
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
+                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+                        form.reset(); // 清空表單
+                        // 重新設定建立時間
+                        const newNow = new Date();
+                        newNow.setMinutes(newNow.getMinutes() - newNow.getTimezoneOffset());
+                        creationTimeInput.value = newNow.toISOString().slice(0, 16);
+                    } else {
+                        messageText.textContent = '儲存失敗: ' + (result.message || '未知錯誤');
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
+                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    }
+                } catch (error) {
+                    console.error('發送資料到 Apps Script 時發生錯誤:', error);
+                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。請檢查控制台。';
+                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
+                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                } finally {
+                    // 3秒後隱藏訊息
+                    setTimeout(() => {
+                        messageContainer.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
