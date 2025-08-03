@@ -43,6 +43,23 @@
         .modal-content {
             z-index: 1000; /* 確保在最上層 */
         }
+        /* 區塊內容隱藏/顯示動畫 */
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .section-content.expanded {
+            max-height: 500px; /* 足夠大的值以顯示內容 */
+            transition: max-height 0.5s ease-in;
+        }
+        /* 箭頭旋轉 */
+        .arrow-icon {
+            transition: transform 0.3s ease;
+        }
+        .arrow-icon.rotated {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
@@ -141,7 +158,7 @@
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec';
             // 會議內容輸入頁面的 URL (請確保此檔案存在且名稱正確)
-            const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html'; // 更新為新的檔案名稱
+            const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
 
             // --- 查詢功能相關邏輯 ---
 
@@ -166,8 +183,6 @@
             // 關鍵字高亮函數
             function highlightKeyword(text, keyword) {
                 if (!keyword || !text) return text;
-                // 使用正則表達式進行全局、不區分大小寫的替換
-                // 確保特殊字元被正確轉義
                 const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedKeyword, 'gi');
                 return text.replace(regex, match => `<span class="highlight">${match}</span>`);
@@ -175,12 +190,11 @@
 
             // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '') {
-                initialMessage.classList.add('hidden'); // 隱藏初始訊息
-                resultsContainer.innerHTML = ''; // 清空之前的結果
+                initialMessage.classList.add('hidden');
+                resultsContainer.innerHTML = '';
                 showMessage('正在查詢會議內容，請稍候...', 'info');
 
                 try {
-                    // 構建 URL 參數
                     let url = `${APPS_SCRIPT_WEB_APP_URL}?`;
                     const params = [];
                     if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
@@ -193,39 +207,83 @@
 
                     if (result.success) {
                         if (result.data && result.data.length > 0) {
-                            resultsContainer.innerHTML = ''; // 再次清空以防萬一
+                            resultsContainer.innerHTML = '';
                             result.data.forEach(meeting => {
                                 const meetingCard = document.createElement('div');
                                 meetingCard.className = 'bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 mb-4';
 
-                                // 處理多行文本並高亮關鍵字
-                                const formatAndHighlight = (content, kw) => {
-                                    if (!content) return '無';
-                                    // 將換行符轉換為 <br> 標籤
-                                    const formattedContent = content.replace(/\n/g, '<br>');
-                                    return highlightKeyword(formattedContent, kw);
-                                };
-
-                                meetingCard.innerHTML = `
+                                // 主要會議資訊
+                                let cardHtml = `
                                     <h3 class="text-xl font-semibold text-gray-800 mb-2">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
                                     <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(meeting['會議日期'] || '無', keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(meeting['開始時間'] || '無', keyword)} - ${highlightKeyword(meeting['結束時間'] || '無', keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>主席:</strong> ${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
-                                    <div class="mt-4 border-t border-gray-200 pt-4 text-gray-700 text-sm">
-                                        <p class="mb-2"><strong>壹、頒獎表揚:</strong> ${formatAndHighlight(meeting['壹、頒獎表揚'], keyword)}</p>
-                                        <p class="mb-2"><strong>貳、主席報告:</strong> ${formatAndHighlight(meeting['貳、主席報告'], keyword)}</p>
-                                        <p class="mb-2"><strong>參、上次會議追蹤事項:</strong> ${formatAndHighlight(meeting['參、上次會議追蹤事項'], keyword)}</p>
-                                        <p class="mb-2"><strong>肆、本次會議報告及討論事項:</strong> ${formatAndHighlight(meeting['肆、本次會議報告及討論事項'], keyword)}</p>
-                                        <p class="mb-2"><strong>伍、臨時動議:</strong> ${formatAndHighlight(meeting['伍、臨時動議'], keyword)}</p>
-                                        <p class="mb-2"><strong>陸、下次會議追蹤事項:</strong> ${formatAndHighlight(meeting['陸、下次會議追蹤事項'], keyword)}</p>
-                                        <p class="mb-2"><strong>柒、主席結論:</strong> ${formatAndHighlight(meeting['柒、主席結論'], keyword)}</p>
-                                    </div>
-                                    <p class="text-gray-500 text-sm mt-2"><strong>附件名稱:</strong> ${highlightKeyword(meeting['附件名稱'] || '無', keyword)}</p>
+                                `;
+
+                                // 會議內容區塊的標題與對應的欄位名稱
+                                const meetingSections = [
+                                    { title: '壹、頒獎表揚', field: '壹、頒獎表揚' },
+                                    { title: '貳、主席報告', field: '貳、主席報告' },
+                                    { title: '參、上次會議追蹤事項', field: '參、上次會議追蹤事項' },
+                                    { title: '肆、本次會議報告及討論事項', field: '肆、本次會議報告及討論事項' },
+                                    { title: '伍、臨時動議', field: '伍、臨時動議' },
+                                    { title: '陸、下次會議追蹤事項', field: '陸、下次會議追蹤事項' },
+                                    { title: '柒、主席結論', field: '柒、主席結論' }
+                                ];
+
+                                // 遍歷每個會議內容區塊
+                                meetingSections.forEach(section => {
+                                    const content = meeting[section.field] || '';
+                                    if (content.trim() !== '') { // 只顯示有內容的區塊
+                                        // 處理多行文本並高亮關鍵字
+                                        const formattedAndHighlightedContent = content.split('\n').map(line => {
+                                            // 檢查行是否以數字或中文數字開頭，然後加上縮排
+                                            if (/^(\d+|[一二三四五六七八九十]+)[、.]/.test(line.trim())) {
+                                                return `<p class="ml-4">${highlightKeyword(line, keyword)}</p>`;
+                                            }
+                                            return `<p>${highlightKeyword(line, keyword)}</p>`;
+                                        }).join('');
+
+
+                                        cardHtml += `
+                                            <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
+                                                    <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
+                                                    <svg class="arrow-icon w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm">
+                                                    ${formattedAndHighlightedContent}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                });
+
+                                cardHtml += `
+                                    <p class="text-gray-500 text-sm mt-4"><strong>附件名稱:</strong> ${highlightKeyword(meeting['附件名稱'] || '無', keyword)}</p>
                                     <p class="text-gray-500 text-sm"><strong>建立時間:</strong> ${highlightKeyword(meeting['建立時間'] || '無', keyword)}</p>
                                 `;
+                                meetingCard.innerHTML = cardHtml;
                                 resultsContainer.appendChild(meetingCard);
                             });
+
+                            // 為每個區塊標題添加點擊事件以實現展開/收合
+                            resultsContainer.querySelectorAll('.section-header').forEach(header => {
+                                header.addEventListener('click', () => {
+                                    const targetId = header.dataset.target;
+                                    const contentDiv = document.getElementById(targetId);
+                                    const arrowIcon = header.querySelector('.arrow-icon');
+
+                                    if (contentDiv) {
+                                        contentDiv.classList.toggle('expanded');
+                                        arrowIcon.classList.toggle('rotated');
+                                    }
+                                });
+                            });
+
                             showMessage(`找到 ${result.data.length} 條結果。`, 'success');
                         } else {
                             resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
@@ -270,16 +328,16 @@
             // 點擊新增會議內容按鈕，顯示登入視窗
             addMeetingButton.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
-                loginModal.classList.add('flex'); // 使用 flex 讓 modal 內容居中
-                usernameInput.value = ''; // 清空輸入框
-                passwordInput.value = ''; // 清空輸入框
-                loginMessage.classList.add('hidden'); // 隱藏錯誤訊息
-                usernameInput.focus(); // 自動聚焦到帳號輸入框
+                loginModal.classList.add('flex');
+                usernameInput.value = '';
+                passwordInput.value = '';
+                loginMessage.classList.add('hidden');
+                usernameInput.focus();
             });
 
             // 點擊登入視窗的背景或取消按鈕，隱藏登入視窗
             loginModal.addEventListener('click', (event) => {
-                if (event.target === loginModal) { // 只有點擊背景才關閉
+                if (event.target === loginModal) {
                     loginModal.classList.add('hidden');
                     loginModal.classList.remove('flex');
                 }
