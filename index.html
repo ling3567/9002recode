@@ -307,39 +307,54 @@
                 }
             }
 
-            // 將文本中的 URL 轉換為可點擊的超連結，並添加點擊事件以打開模態視窗
-            function formatLinksInText(text, keyword) {
-                if (!text) return '無';
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                
-                // 先對關鍵字高亮，再處理連結
-                const highlightedText = highlightKeyword(text, keyword);
-
-                let formattedText = highlightedText.replace(urlRegex, (url) => {
-                    // 這裡的邏輯有問題，因為 highlightedText 已經是 HTML 了，重新 replace 會出錯
-                    // 修正方式是將 highlightKeyword 和 url 替換分開處理
-                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-150 ease-in-out">${highlightKeyword(url.split('/').pop().substring(0, 30) + '...', keyword)}</a>`;
+            // 將文本中的 URL 轉換為可點擊的按鈕
+            function formatAttachmentLinks(text, keyword) {
+                if (!text) return '';
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                let html = '';
+                lines.forEach((line, index) => {
+                    const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                    const url = urlMatch ? urlMatch[0] : '';
+                    
+                    if (url) {
+                        const descriptionMatch = line.match(/^(.*?):/);
+                        const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+                        const displayTitle = description || `附件點選`;
+                        
+                        const isRelevant = keyword ? (description + url).toLowerCase().includes(keyword.toLowerCase()) : true;
+                        
+                        if (isRelevant) {
+                            html += `
+                                <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
+                                    <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
+                                        ${highlightKeyword(displayTitle, keyword)}
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        if (keyword ? line.toLowerCase().includes(keyword.toLowerCase()) : true) {
+                            html += `<p class="mt-2 text-gray-600">${highlightKeyword(line, keyword)}</p>`;
+                        }
+                    }
                 });
-                return formattedText;
+                return html;
             }
-
 
             // 檢查會議紀錄或其內容是否包含關鍵字
             function containsKeyword(data, keyword) {
-                if (!keyword) return true; // 無關鍵字時，視為包含
+                if (!keyword) return true;
                 const lowerKeyword = keyword.toLowerCase();
 
-                // 檢查基本資訊
                 for (const key in data) {
                     if (typeof data[key] === 'string' && data[key].toLowerCase().includes(lowerKeyword)) {
                         return true;
                     }
                 }
 
-                // 檢查詳細內容區塊
                 const meetingSectionsFields = [
                     '壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項',
-                    '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱' // 包含附件名稱
+                    '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱'
                 ];
                 for (const field of meetingSectionsFields) {
                     if (data[field] && data[field].toLowerCase().includes(lowerKeyword)) {
@@ -349,12 +364,11 @@
                 return false;
             }
 
-
             // 執行查詢的函數
-            async function performSearch(keyword = '', startDate = '', endDate = '') {
+            async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
                 let lowerKeyword = keyword.toLowerCase();
                 if (!keyword) {
-                    lowerKeyword = ''; // 確保在無關鍵字時，lowerKeyword為空字串
+                    lowerKeyword = '';
                 }
 
                 initialMessage.classList.add('hidden');
@@ -367,6 +381,7 @@
                     if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
                     if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
                     if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+                    if (showLatest) params.push(`showLatest=${showLatest}`);
                     url += params.join('&');
 
                     const response = await fetch(url);
@@ -375,20 +390,18 @@
                     if (result.success) {
                         if (result.data && result.data.length > 0) {
                             resultsContainer.innerHTML = '';
-                            let displayedMeetingsCount = 0; // 追蹤實際顯示的會議數量
+                            let displayedMeetingsCount = 0;
 
                             result.data.forEach(meeting => {
-                                // 判斷整個會議紀錄是否包含關鍵字，如果沒有關鍵字則顯示所有
                                 if (!containsKeyword(meeting, keyword)) {
-                                    return; // 不包含關鍵字，跳過此會議紀錄
+                                    return;
                                 }
 
-                                displayedMeetingsCount++; // 增加顯示計數
+                                displayedMeetingsCount++;
 
                                 const meetingCard = document.createElement('div');
                                 meetingCard.className = 'bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 mb-4';
 
-                                // 基本會議資訊 (始終顯示)
                                 let cardHtml = `
                                     <h3 class="text-xl font-semibold text-gray-800 mb-2">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
                                     <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
@@ -407,17 +420,17 @@
                                     { title: '柒、主席結論', field: '柒、主席結論' }
                                 ];
 
-                                // 遍歷每個會議內容區塊
                                 meetingSections.forEach(section => {
                                     const content = meeting[section.field] || '';
                                     const lowerContent = content.toLowerCase();
 
                                     const isSectionContentRelevant = keyword ? lowerContent.includes(lowerKeyword) : false;
+                                    
+                                    const sectionExpandedClass = isSectionContentRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                    const sectionArrowClass = isSectionContentRelevant || (showLatest && !keyword) ? 'expanded' : '';
 
                                     if (content.trim() !== '' && (isSectionContentRelevant || !keyword)) {
                                         let sectionContentHtml = '';
-                                        let sectionExpandedClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
-                                        let sectionArrowClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
 
                                         if (section.field === '肆、本次會議報告及討論事項') {
                                             let subSectionsHtml = '';
@@ -425,12 +438,9 @@
                                             let match;
                                             let lastIndex = 0;
 
-                                            const firstMatch = subSectionsRegex.exec(content);
-                                            if (firstMatch && firstMatch.index > 0) {
-                                                const preContent = content.substring(0, firstMatch.index).trim();
-                                                if (preContent && (keyword ? preContent.toLowerCase().includes(lowerKeyword) : true)) {
-                                                    subSectionsHtml += `<p>${formatLinksInText(preContent.replace(/\n/g, '<br>'), keyword)}</p>`;
-                                                }
+                                            const preContent = content.substring(0, content.search(subSectionsRegex)).trim();
+                                            if (preContent && (keyword ? preContent.toLowerCase().includes(lowerKeyword) : true)) {
+                                                subSectionsHtml += `<p>${highlightKeyword(preContent.replace(/\n/g, '<br>'), keyword)}</p>`;
                                             }
                                             subSectionsRegex.lastIndex = 0;
 
@@ -449,16 +459,16 @@
                                                     const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '';
                                                     const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
 
-                                                    const subSectionExpandedClass = isSubSectionRelevant ? 'expanded' : '';
-                                                    const subSectionArrowClass = isSubSectionRelevant ? 'expanded' : '';
+                                                    const subSectionExpandedClass = isSubSectionRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                                    const subSectionArrowClass = isSubSectionRelevant || (showLatest && !keyword) ? 'expanded' : '';
 
                                                     const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
 
                                                     const formattedSubSectionBody = subSectionBody.split('\n').map(line => {
                                                         if (/^\(\d+\)[、.]?/.test(line.trim())) {
-                                                            return `<p class="ml-8">${formatLinksInText(line, keyword)}</p>`;
+                                                            return `<p class="ml-8">${highlightKeyword(line, keyword)}</p>`;
                                                         }
-                                                        return `<p>${formatLinksInText(line, keyword)}</p>`;
+                                                        return `<p>${highlightKeyword(line, keyword)}</p>`;
                                                     }).join('');
 
                                                     subSectionsHtml += `
@@ -480,12 +490,7 @@
 
                                             const remainingContent = content.substring(lastIndex).trim();
                                             if (remainingContent && (keyword ? remainingContent.toLowerCase().includes(lowerKeyword) : true)) {
-                                                subSectionsHtml += `<p>${formatLinksInText(remainingContent.replace(/\n/g, '<br>'), keyword)}</p>`;
-                                            }
-
-                                            if (foundRelevantSubSectionInThisSection) {
-                                                sectionExpandedClass = 'expanded';
-                                                sectionArrowClass = 'expanded';
+                                                subSectionsHtml += `<p>${highlightKeyword(remainingContent.replace(/\n/g, '<br>'), keyword)}</p>`;
                                             }
 
                                             if (isSectionContentRelevant || foundRelevantSubSectionInThisSection || !keyword) {
@@ -507,12 +512,12 @@
                                         } else {
                                             sectionContentHtml = content.split('\n').map(line => {
                                                 if (/^\(\d+\)[、.]?/.test(line.trim())) {
-                                                    return `<p class="ml-8">${formatLinksInText(line, keyword)}</p>`;
+                                                    return `<p class="ml-8">${highlightKeyword(line, keyword)}</p>`;
                                                 }
                                                 if (/^(\d+|[一二三四五六七八九十]+)[、.]/.test(line.trim())) {
-                                                    return `<p class="ml-4">${formatLinksInText(line, keyword)}</p>`;
+                                                    return `<p class="ml-4">${highlightKeyword(line, keyword)}</p>`;
                                                 }
-                                                return `<p>${formatLinksInText(line, keyword)}</p>`;
+                                                return `<p>${highlightKeyword(line, keyword)}</p>`;
                                             }).join('');
 
                                             cardHtml += `
@@ -538,26 +543,26 @@
                                 const isAttachmentRelevant = keyword ? lowerAttachmentContent.includes(lowerKeyword) : false;
 
                                 if (attachmentContent.trim() !== '' && (isAttachmentRelevant || !keyword)) {
-                                    const attachmentExpandedClass = isAttachmentRelevant ? 'expanded' : '';
-                                    const attachmentArrowClass = isAttachmentRelevant ? 'expanded' : '';
-                                    const attachmentSectionId = '附件'; // 簡單的ID
+                                    const attachmentExpandedClass = isAttachmentRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                    const attachmentArrowClass = isAttachmentRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                    const attachmentSectionId = '附件';
 
                                     const attachments = attachmentContent.split('\n').filter(line => line.trim() !== '');
                                     let attachmentLinksHtml = '';
 
-                                    attachments.forEach((attachmentLine, index) => {
+                                    attachments.forEach((attachmentLine) => {
                                         const urlMatch = attachmentLine.match(/(https?:\/\/[^\s]+)/);
                                         const url = urlMatch ? urlMatch[0] : '';
-                                        const description = attachmentLine.replace(url, '').trim();
-                                        const displayTitle = description || `附件 ${index + 1}`;
-
+                                        const descriptionMatch = attachmentLine.match(/^(.*?):/);
+                                        const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+                                        
                                         if (url) {
-                                            const isLinkRelevant = keyword ? displayTitle.toLowerCase().includes(lowerKeyword) : false;
-                                            if (isLinkRelevant || !keyword) {
+                                            const isLinkRelevant = keyword ? (description + url).toLowerCase().includes(lowerKeyword) : true;
+                                            if (isLinkRelevant) {
                                                 attachmentLinksHtml += `
                                                     <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
                                                         <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
-                                                            ${highlightKeyword(displayTitle, keyword)}
+                                                            ${highlightKeyword(description || '附件點選', keyword)}
                                                         </button>
                                                     </div>
                                                 `;
@@ -569,7 +574,7 @@
                                         }
                                     });
 
-                                    if (attachmentLinksHtml) { // 只在有附件項目時才生成此區塊
+                                    if (attachmentLinksHtml) {
                                         cardHtml += `
                                             <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentSectionId}">
@@ -593,7 +598,6 @@
                                 resultsContainer.appendChild(meetingCard);
                             });
 
-                            // 為所有區塊標題 (包括子區塊) 添加點擊事件以實現展開/收合
                             resultsContainer.querySelectorAll('.section-header').forEach(header => {
                                 header.addEventListener('click', (event) => {
                                     if (event.target.tagName === 'BUTTON' && event.target.classList.contains('view-document-button')) {
@@ -632,7 +636,6 @@
                 }
             }
 
-            // 搜尋按鈕點擊事件
             searchButton.addEventListener('click', () => {
                 const keyword = keywordInput.value.trim();
                 const startDate = startDateInput.value;
@@ -640,24 +643,19 @@
                 performSearch(keyword, startDate, endDate);
             });
 
-            // 顯示所有會議按鈕點擊事件
             showAllButton.addEventListener('click', () => {
-                keywordInput.value = ''; // 清空關鍵字輸入框
-                startDateInput.value = ''; // 清空日期輸入框
-                endDateInput.value = ''; // 清空日期輸入框
-                performSearch('', '', ''); // 傳遞空字串表示顯示所有
+                keywordInput.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                performSearch('', '', '', true);
             });
 
-            // 允許按 Enter 鍵進行搜尋
             keywordInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     searchButton.click();
                 }
             });
 
-            // --- 登入功能相關邏輯 ---
-
-            // 點擊新增會議內容按鈕，顯示登入視窗
             addMeetingButton.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
@@ -667,7 +665,6 @@
                 usernameInput.focus();
             });
 
-            // 點擊登入視窗的背景或取消按鈕，隱藏登入視窗
             loginModal.addEventListener('click', (event) => {
                 if (event.target === loginModal) {
                     loginModal.classList.add('hidden');
@@ -679,7 +676,6 @@
                 loginModal.classList.remove('flex');
             });
 
-            // 登入按鈕點擊事件
             loginButton.addEventListener('click', () => {
                 const username = usernameInput.value;
                 const password = passwordInput.value;
@@ -688,14 +684,13 @@
                     loginMessage.classList.add('hidden');
                     loginModal.classList.add('hidden');
                     loginModal.classList.remove('flex');
-                    window.location.href = MEETING_INPUT_PAGE_URL; // 導向新增會議頁面
+                    window.location.href = MEETING_INPUT_PAGE_URL;
                 } else {
                     loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
                     loginMessage.classList.remove('hidden');
                 }
             });
 
-            // 允許在登入視窗中按 Enter 鍵進行登入
             usernameInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     passwordInput.focus();
@@ -707,23 +702,12 @@
                 }
             });
 
-            // --- 文件預覽模態視窗邏輯 ---
             window.openDocumentViewer = function(url) {
-                // 對 Google Drive 連結進行特殊處理，以確保在 iframe 中正確嵌入
                 let embedUrl = url;
-                if (url.includes('drive.google.com/file/d/') || url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
-                    // 將 /view?usp=sharing 或 /edit?usp=sharing 替換為 /preview 或 /embed
-                    embedUrl = url.replace(/\/view\?usp=sharing|\/edit\?usp=sharing/, '/preview');
-                    if (!embedUrl.includes('/preview')) { // 如果沒有替換成功，則嘗試添加
-                         embedUrl = url.replace(/\/edit/, '/preview');
-                    }
-                    if (!embedUrl.includes('/preview') && url.includes('drive.google.com/file/d/')) {
-                        // For drive.google.com/file/d/ links, use /preview
-                        embedUrl = url.replace(/\/file\/d\/([a-zA-Z0-9_-]+)(.*)/, '/file/d/$1/preview');
-                    } else if (!embedUrl.includes('/preview') && (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/'))) {
-                        // For docs.google.com/d/ links, use /embed
-                        embedUrl = url.replace(/\/edit/, '/embed');
-                    }
+                if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
+                    embedUrl = url.replace(/\/edit|\/view/, '/embed');
+                } else if (url.includes('drive.google.com/file/d/')) {
+                    embedUrl = url.replace(/\/view\?usp=sharing/, '/preview');
                 }
                 
                 documentViewerIframe.src = embedUrl;
@@ -734,10 +718,9 @@
             closeDocumentViewerButton.addEventListener('click', () => {
                 documentViewerModal.classList.add('hidden');
                 documentViewerModal.classList.remove('flex');
-                documentViewerIframe.src = ''; // 清空 iframe src，停止加載
+                documentViewerIframe.src = '';
             });
 
-            // 點擊模態視窗背景關閉
             documentViewerModal.addEventListener('click', (event) => {
                 if (event.target === documentViewerModal) {
                     documentViewerModal.classList.add('hidden');
@@ -745,7 +728,13 @@
                     documentViewerIframe.src = '';
                 }
             });
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('keyword') && !urlParams.get('startDate') && !urlParams.get('endDate')) {
+                performSearch('', '', '', true);
+            }
         });
     </script>
 </body>
 </html>
+
