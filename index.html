@@ -45,20 +45,65 @@
         }
         /* 區塊內容隱藏/顯示動畫 */
         .section-content {
-            max-height: 0;
+            max-height: 0; /* 預設收合 */
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
+            transition: max-height 0.5s ease-in-out; /* 調整過渡時間 */
         }
-        .section-content.expanded {
-            max-height: 500px; /* 足夠大的值以顯示內容 */
-            transition: max-height 0.5s ease-in;
+        .section-content.expanded { /* 展開時使用這個類別 */
+            max-height: 9999px; /* 足夠大的值以顯示內容 */
         }
         /* 箭頭旋轉 */
         .arrow-icon {
             transition: transform 0.3s ease;
+            transform: rotate(0deg); /* 預設收合，箭頭向右 */
         }
-        .arrow-icon.rotated {
-            transform: rotate(90deg);
+        .arrow-icon.expanded { /* 展開時使用這個類別 */
+            transform: rotate(90deg); /* 展開時箭頭向下 */
+        }
+
+        /* 文件預覽模態視窗樣式 */
+        #documentViewerModal {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #documentViewerModal.flex {
+            display: flex; /* 顯示時變為 flex */
+        }
+        .document-viewer-content {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            height: 90%;
+            max-width: 1000px; /* 最大寬度 */
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .document-viewer-iframe {
+            flex-grow: 1; /* 讓 iframe 佔滿剩餘空間 */
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        .document-viewer-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4b5563; /* gray-600 */
         }
     </style>
 </head>
@@ -133,6 +178,15 @@
         </div>
     </div>
 
+    <!-- 文件預覽模態視窗 -->
+    <div id="documentViewerModal" class="flex-col">
+        <div class="document-viewer-content">
+            <button class="document-viewer-close" id="closeDocumentViewer">&times;</button>
+            <iframe id="documentViewerIframe" class="document-viewer-iframe"></iframe>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // 查詢功能相關元素
@@ -155,8 +209,14 @@
             const cancelLoginButton = document.getElementById('cancelLoginButton');
             const loginMessage = document.getElementById('loginMessage');
 
+            // 文件預覽模態視窗元素
+            const documentViewerModal = document.getElementById('documentViewerModal');
+            const documentViewerIframe = document.getElementById('documentViewerIframe');
+            const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
+
+
             // Apps Script Web 應用程式 URL
-            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec';
+            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwGfB69jH5jW2zP5iQ8s4pQ37K9t6E2_sH7FqK9a/exec';
             // 會議內容輸入頁面的 URL (請確保此檔案存在且名稱正確)
             const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
 
@@ -188,8 +248,112 @@
                 return text.replace(regex, match => `<span class="highlight">${match}</span>`);
             }
 
+            // 格式化日期為 YYYY-MM-DD
+            function formatDate(dateString) {
+                if (!dateString) return '無';
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) {
+                        return dateString;
+                    }
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                } catch (e) {
+                    console.error("Error formatting date:", e);
+                    return dateString;
+                }
+            }
+
+            // 格式化時間為 HH:MM
+            function formatTime(timeString) {
+                if (!timeString) return '無';
+                try {
+                    const timeMatch = timeString.match(/(\d{1,2}:\d{2})/);
+                    if (timeMatch && timeMatch[1]) {
+                        return timeMatch[1];
+                    }
+                    const date = new Date(`2000-01-01T${timeString}`);
+                    if (!isNaN(date.getTime())) {
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${hours}:${minutes}`;
+                    }
+                    return timeString;
+                } catch (e) {
+                    console.error("Error formatting time:", e);
+                    return timeString;
+                }
+            }
+
+            // 格式化建立時間為 YYYY-MM-DD HH:MM
+            function formatCreationTime(dateTimeString) {
+                if (!dateTimeString) return '無';
+                try {
+                    const date = new Date(dateTimeString);
+                    if (isNaN(date.getTime())) {
+                        return dateTimeString;
+                    }
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${year}-${month}-${day} ${hours}:${minutes}`;
+                } catch (e) {
+                    console.error("Error formatting creation time:", e);
+                    return dateTimeString;
+                }
+            }
+
+            // 將文本中的 URL 轉換為可點擊的超連結，並添加點擊事件以打開模態視窗
+            function formatLinksInText(text, keyword) {
+                if (!text) return '無';
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                
+                // 先對關鍵字高亮，再處理連結
+                const highlightedText = highlightKeyword(text, keyword);
+
+                let formattedText = highlightedText.replace(urlRegex, (url) => {
+                    // 檢查URL是否包含在highlight span中，如果是，則不處理
+                    // 這裡簡化處理，直接替換
+                    return `<button type="button" class="view-document-button text-blue-600 hover:underline px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-150 ease-in-out" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">點擊預覽文件</button>`;
+                });
+
+                return formattedText;
+            }
+
+
+            // 檢查會議紀錄或其內容是否包含關鍵字
+            function containsKeyword(data, keyword) {
+                if (!keyword) return true; // 無關鍵字時，視為包含
+                const lowerKeyword = keyword.toLowerCase();
+
+                // 檢查基本資訊
+                for (const key in data) {
+                    if (typeof data[key] === 'string' && data[key].toLowerCase().includes(lowerKeyword)) {
+                        return true;
+                    }
+                }
+
+                // 檢查詳細內容區塊
+                const meetingSectionsFields = [
+                    '壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項',
+                    '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱' // 包含附件名稱
+                ];
+                for (const field of meetingSectionsFields) {
+                    if (data[field] && data[field].toLowerCase().includes(lowerKeyword)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+
             // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '') {
+                const lowerKeyword = keyword.toLowerCase();
                 initialMessage.classList.add('hidden');
                 resultsContainer.innerHTML = '';
                 showMessage('正在查詢會議內容，請稍候...', 'info');
@@ -208,20 +372,28 @@
                     if (result.success) {
                         if (result.data && result.data.length > 0) {
                             resultsContainer.innerHTML = '';
+                            let displayedMeetingsCount = 0; // 追蹤實際顯示的會議數量
+
                             result.data.forEach(meeting => {
+                                // 判斷整個會議紀錄是否包含關鍵字，如果沒有關鍵字則顯示所有
+                                if (!containsKeyword(meeting, keyword)) {
+                                    return; // 不包含關鍵字，跳過此會議紀錄
+                                }
+
+                                displayedMeetingsCount++; // 增加顯示計數
+
                                 const meetingCard = document.createElement('div');
                                 meetingCard.className = 'bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 mb-4';
 
-                                // 主要會議資訊
+                                // 基本會議資訊 (始終顯示)
                                 let cardHtml = `
                                     <h3 class="text-xl font-semibold text-gray-800 mb-2">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
-                                    <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(meeting['會議日期'] || '無', keyword)}</p>
-                                    <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(meeting['開始時間'] || '無', keyword)} - ${highlightKeyword(meeting['結束時間'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(formatTime(meeting['開始時間']), keyword)} - ${highlightKeyword(formatTime(meeting['結束時間']), keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>主席:</strong> ${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
                                 `;
 
-                                // 會議內容區塊的標題與對應的欄位名稱
                                 const meetingSections = [
                                     { title: '壹、頒獎表揚', field: '壹、頒獎表揚' },
                                     { title: '貳、主席報告', field: '貳、主席報告' },
@@ -235,56 +407,213 @@
                                 // 遍歷每個會議內容區塊
                                 meetingSections.forEach(section => {
                                     const content = meeting[section.field] || '';
-                                    if (content.trim() !== '') { // 只顯示有內容的區塊
-                                        // 處理多行文本並高亮關鍵字
-                                        const formattedAndHighlightedContent = content.split('\n').map(line => {
-                                            // 檢查行是否以數字或中文數字開頭，然後加上縮排
-                                            if (/^(\d+|[一二三四五六七八九十]+)[、.]/.test(line.trim())) {
-                                                return `<p class="ml-4">${highlightKeyword(line, keyword)}</p>`;
+                                    const lowerContent = content.toLowerCase();
+
+                                    const isSectionContentRelevant = keyword ? lowerContent.includes(lowerKeyword) : false;
+
+                                    if (content.trim() !== '' && (isSectionContentRelevant || !keyword)) {
+                                        let sectionContentHtml = '';
+                                        const sectionExpandedClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
+                                        const sectionArrowClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
+
+                                        if (section.field === '肆、本次會議報告及討論事項') {
+                                            let subSectionsHtml = '';
+                                            const subSectionsRegex = /([一二三四五六七八九十\d]+[、．][\s\S]*?(?=\n[一二三四五六七八九十\d]+[、．]|$))/g;
+                                            let match;
+                                            let lastIndex = 0;
+
+                                            const firstMatch = subSectionsRegex.exec(content);
+                                            if (firstMatch && firstMatch.index > 0) {
+                                                const preContent = content.substring(0, firstMatch.index).trim();
+                                                if (preContent && (keyword ? preContent.toLowerCase().includes(lowerKeyword) : true)) {
+                                                    subSectionsHtml += `<p>${formatLinksInText(preContent.replace(/\n/g, '<br>'), keyword)}</p>`;
+                                                }
                                             }
-                                            return `<p>${highlightKeyword(line, keyword)}</p>`;
-                                        }).join('');
+                                            subSectionsRegex.lastIndex = 0;
 
+                                            let foundRelevantSubSectionInThisSection = false;
 
+                                            while ((match = subSectionsRegex.exec(content)) !== null) {
+                                                const fullSubSectionText = match[0].trim();
+                                                const isSubSectionRelevant = keyword ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : false;
+
+                                                if (isSubSectionRelevant || !keyword) {
+                                                    if (isSubSectionRelevant) {
+                                                        foundRelevantSubSectionInThisSection = true;
+                                                    }
+
+                                                    const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十\d]+[、．][^：]*[：]?)/);
+                                                    const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '';
+                                                    const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
+
+                                                    const subSectionExpandedClass = isSubSectionRelevant ? 'expanded' : '';
+                                                    const subSectionArrowClass = isSubSectionRelevant ? 'expanded' : '';
+
+                                                    const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
+
+                                                    const formattedSubSectionBody = subSectionBody.split('\n').map(line => {
+                                                        if (/^\(\d+\)[、.]?/.test(line.trim())) {
+                                                            return `<p class="ml-8">${formatLinksInText(line, keyword)}</p>`;
+                                                        }
+                                                        return `<p>${formatLinksInText(line, keyword)}</p>`;
+                                                    }).join('');
+
+                                                    subSectionsHtml += `
+                                                        <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
+                                                            <div class="flex justify-between items-center cursor-pointer section-header" data-target="${subSectionId}">
+                                                                <h5 class="text-base font-semibold text-gray-700">${highlightKeyword(subSectionTitle, keyword)}</h5>
+                                                                <svg class="arrow-icon w-4 h-4 text-gray-500 ${subSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                                </svg>
+                                                            </div>
+                                                            <div id="${subSectionId}" class="section-content mt-1 text-gray-600 text-sm ${subSectionExpandedClass}">
+                                                                ${formattedSubSectionBody}
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                                }
+                                                lastIndex = subSectionsRegex.lastIndex;
+                                            }
+
+                                            const remainingContent = content.substring(lastIndex).trim();
+                                            if (remainingContent && (keyword ? remainingContent.toLowerCase().includes(lowerKeyword) : true)) {
+                                                subSectionsHtml += `<p>${formatLinksInText(remainingContent.replace(/\n/g, '<br>'), keyword)}</p>`;
+                                            }
+
+                                            if (foundRelevantSubSectionInThisSection) {
+                                                sectionExpandedClass = 'expanded';
+                                                sectionArrowClass = 'expanded';
+                                            }
+
+                                            if (isSectionContentRelevant || foundRelevantSubSectionInThisSection || !keyword) {
+                                                cardHtml += `
+                                                    <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                        <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
+                                                            <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
+                                                            <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        </div>
+                                                        <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${sectionExpandedClass}">
+                                                            ${subSectionsHtml}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }
+
+                                        } else {
+                                            sectionContentHtml = content.split('\n').map(line => {
+                                                if (/^\(\d+\)[、.]?/.test(line.trim())) {
+                                                    return `<p class="ml-8">${formatLinksInText(line, keyword)}</p>`;
+                                                }
+                                                if (/^(\d+|[一二三四五六七八九十]+)[、.]/.test(line.trim())) {
+                                                    return `<p class="ml-4">${formatLinksInText(line, keyword)}</p>`;
+                                                }
+                                                return `<p>${formatLinksInText(line, keyword)}</p>`;
+                                            }).join('');
+
+                                            cardHtml += `
+                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
+                                                        <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
+                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${sectionExpandedClass}">
+                                                        ${sectionContentHtml}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }
+                                    }
+                                });
+
+                                // 附件部分作為獨立卡片處理
+                                const attachmentContent = meeting['附件名稱'] || '';
+                                const lowerAttachmentContent = attachmentContent.toLowerCase();
+                                const isAttachmentRelevant = keyword ? lowerAttachmentContent.includes(lowerKeyword) : false;
+
+                                if (attachmentContent.trim() !== '' && (isAttachmentRelevant || !keyword)) {
+                                    const attachmentExpandedClass = isAttachmentRelevant ? 'expanded' : '';
+                                    const attachmentArrowClass = isAttachmentRelevant ? 'expanded' : '';
+                                    const attachmentSectionId = '附件'; // 簡單的ID
+
+                                    const attachments = attachmentContent.split('\n').filter(line => line.trim() !== '');
+                                    let attachmentLinksHtml = '';
+
+                                    attachments.forEach((attachmentLine, index) => {
+                                        const urlMatch = attachmentLine.match(/(https?:\/\/[^\s]+)/);
+                                        const url = urlMatch ? urlMatch[0] : '';
+                                        const description = attachmentLine.replace(url, '').trim();
+                                        const displayTitle = description || `附件 ${index + 1}`;
+
+                                        if (url) {
+                                            const isLinkRelevant = keyword ? displayTitle.toLowerCase().includes(lowerKeyword) : false;
+                                            if (isLinkRelevant || !keyword) {
+                                                attachmentLinksHtml += `
+                                                    <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
+                                                        <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
+                                                            ${highlightKeyword(displayTitle, keyword)}
+                                                        </button>
+                                                    </div>
+                                                `;
+                                            }
+                                        } else {
+                                            if (keyword ? attachmentLine.toLowerCase().includes(lowerKeyword) : true) {
+                                                attachmentLinksHtml += `<p class="mt-2 text-gray-600">${highlightKeyword(attachmentLine, keyword)}</p>`;
+                                            }
+                                        }
+                                    });
+
+                                    if (attachmentLinksHtml) { // 只在有附件項目時才生成此區塊
                                         cardHtml += `
                                             <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
-                                                    <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
-                                                    <svg class="arrow-icon w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                <div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentSectionId}">
+                                                    <h4 class="text-lg font-semibold text-gray-800">附件</h4>
+                                                    <svg class="arrow-icon w-5 h-5 text-gray-600 ${attachmentArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                     </svg>
                                                 </div>
-                                                <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm">
-                                                    ${formattedAndHighlightedContent}
+                                                <div id="${attachmentSectionId}" class="section-content mt-2 text-gray-700 text-sm ${attachmentExpandedClass}">
+                                                    ${attachmentLinksHtml}
                                                 </div>
                                             </div>
                                         `;
                                     }
-                                });
+                                }
 
                                 cardHtml += `
-                                    <p class="text-gray-500 text-sm mt-4"><strong>附件名稱:</strong> ${highlightKeyword(meeting['附件名稱'] || '無', keyword)}</p>
-                                    <p class="text-gray-500 text-sm"><strong>建立時間:</strong> ${highlightKeyword(meeting['建立時間'] || '無', keyword)}</p>
+                                    <p class="text-gray-500 text-sm mt-4"><strong>建立時間:</strong> ${highlightKeyword(formatCreationTime(meeting['建立時間']), keyword)}</p>
                                 `;
                                 meetingCard.innerHTML = cardHtml;
                                 resultsContainer.appendChild(meetingCard);
                             });
 
-                            // 為每個區塊標題添加點擊事件以實現展開/收合
+                            // 為所有區塊標題 (包括子區塊) 添加點擊事件以實現展開/收合
                             resultsContainer.querySelectorAll('.section-header').forEach(header => {
-                                header.addEventListener('click', () => {
+                                header.addEventListener('click', (event) => {
+                                    if (event.target.tagName === 'BUTTON' && event.target.classList.contains('view-document-button')) {
+                                        return;
+                                    }
                                     const targetId = header.dataset.target;
                                     const contentDiv = document.getElementById(targetId);
                                     const arrowIcon = header.querySelector('.arrow-icon');
 
                                     if (contentDiv) {
                                         contentDiv.classList.toggle('expanded');
-                                        arrowIcon.classList.toggle('rotated');
+                                        arrowIcon.classList.toggle('expanded');
                                     }
                                 });
                             });
 
-                            showMessage(`找到 ${result.data.length} 條結果。`, 'success');
+                            if (displayedMeetingsCount > 0) {
+                                showMessage(`找到 ${displayedMeetingsCount} 條結果。`, 'success');
+                            } else {
+                                resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
+                                showMessage('沒有找到符合條件的會議紀錄。', 'info');
+                            }
+
                         } else {
                             resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
                             showMessage('沒有找到符合條件的會議紀錄。', 'info');
@@ -372,6 +701,45 @@
             passwordInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     loginButton.click();
+                }
+            });
+
+            // --- 文件預覽模態視窗邏輯 ---
+            window.openDocumentViewer = function(url) {
+                // 對 Google Drive 連結進行特殊處理，以確保在 iframe 中正確嵌入
+                let embedUrl = url;
+                if (url.includes('drive.google.com/file/d/') || url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
+                    // 將 /view?usp=sharing 或 /edit?usp=sharing 替換為 /preview 或 /embed
+                    embedUrl = url.replace(/\/view\?usp=sharing|\/edit\?usp=sharing/, '/preview');
+                    if (!embedUrl.includes('/preview')) { // 如果沒有替換成功，則嘗試添加
+                         embedUrl = url.replace(/\/edit/, '/preview');
+                    }
+                    if (!embedUrl.includes('/preview') && url.includes('drive.google.com/file/d/')) {
+                        // For drive.google.com/file/d/ links, use /preview
+                        embedUrl = url.replace(/\/file\/d\/([a-zA-Z0-9_-]+)(.*)/, '/file/d/$1/preview');
+                    } else if (!embedUrl.includes('/preview') && (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/'))) {
+                        // For docs.google.com/d/ links, use /embed
+                        embedUrl = url.replace(/\/edit/, '/embed');
+                    }
+                }
+                
+                documentViewerIframe.src = embedUrl;
+                documentViewerModal.classList.add('flex');
+                documentViewerModal.classList.remove('hidden');
+            };
+
+            closeDocumentViewerButton.addEventListener('click', () => {
+                documentViewerModal.classList.add('hidden');
+                documentViewerModal.classList.remove('flex');
+                documentViewerIframe.src = ''; // 清空 iframe src，停止加載
+            });
+
+            // 點擊模態視窗背景關閉
+            documentViewerModal.addEventListener('click', (event) => {
+                if (event.target === documentViewerModal) {
+                    documentViewerModal.classList.add('hidden');
+                    documentViewerModal.classList.remove('flex');
+                    documentViewerIframe.src = '';
                 }
             });
         });
