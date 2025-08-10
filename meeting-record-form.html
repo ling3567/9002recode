@@ -111,9 +111,9 @@
 
             <!-- 附件名稱 -->
             <div>
-                <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件名稱</label>
-                <input type="text" id="attachmentName" name="附件名稱"
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件</label>
+                <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
             </div>
 
             <!-- 建立時間 (自動填入) -->
@@ -142,17 +142,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('meetingForm');
             const creationTimeInput = document.getElementById('creationTime');
+            const startTimeInput = document.getElementById('startTime'); // Get the start time input
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
 
             // Apps Script Web 應用程式 URL
-            // 請確保這個 URL 是您部署 Apps Script 後獲得的正確網址
-            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwEgDDAX-2cauZlZL04vp7h698XmFgTWyXfis6JmuVIDS-MsTPTBPlXDZUZSldJACSGOQ/exec';
+            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwGfB69jH5jW2zP5iQ8s4pQ37K9t6E2_sH7FqK9a/exec';
 
             // 自動填入建立時間為當前時間
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // 調整時區
             creationTimeInput.value = now.toISOString().slice(0, 16);
+
+            // 設定開始時間預設為 12:30 PM
+            startTimeInput.value = '12:30';
 
             form.addEventListener('submit', async (event) => {
                 event.preventDefault(); // 防止表單預設提交行為
@@ -192,6 +195,8 @@
                         const newNow = new Date();
                         newNow.setMinutes(newNow.getMinutes() - newNow.getTimezoneOffset());
                         creationTimeInput.value = newNow.toISOString().slice(0, 16);
+                        // 重新設定開始時間
+                        startTimeInput.value = '12:30';
                     } else {
                         messageText.textContent = '儲存失敗: ' + (result.message || '未知錯誤');
                         messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
