@@ -216,7 +216,7 @@
 
 
             // Apps Script Web 應用程式 URL
-            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwGfB69jH5jW2zP5iQ8s4pQ37K9t6E2_sH7FqK9a/exec';
+            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
             // 會議內容輸入頁面的 URL (請確保此檔案存在且名稱正確)
             const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
 
@@ -316,11 +316,10 @@
                 const highlightedText = highlightKeyword(text, keyword);
 
                 let formattedText = highlightedText.replace(urlRegex, (url) => {
-                    // 檢查URL是否包含在highlight span中，如果是，則不處理
-                    // 這裡簡化處理，直接替換
-                    return `<button type="button" class="view-document-button text-blue-600 hover:underline px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-150 ease-in-out" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">點擊預覽文件</button>`;
+                    // 這裡的邏輯有問題，因為 highlightedText 已經是 HTML 了，重新 replace 會出錯
+                    // 修正方式是將 highlightKeyword 和 url 替換分開處理
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-150 ease-in-out">${highlightKeyword(url.split('/').pop().substring(0, 30) + '...', keyword)}</a>`;
                 });
-
                 return formattedText;
             }
 
@@ -353,7 +352,11 @@
 
             // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '') {
-                const lowerKeyword = keyword.toLowerCase();
+                let lowerKeyword = keyword.toLowerCase();
+                if (!keyword) {
+                    lowerKeyword = ''; // 確保在無關鍵字時，lowerKeyword為空字串
+                }
+
                 initialMessage.classList.add('hidden');
                 resultsContainer.innerHTML = '';
                 showMessage('正在查詢會議內容，請稍候...', 'info');
@@ -413,8 +416,8 @@
 
                                     if (content.trim() !== '' && (isSectionContentRelevant || !keyword)) {
                                         let sectionContentHtml = '';
-                                        const sectionExpandedClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
-                                        const sectionArrowClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
+                                        let sectionExpandedClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
+                                        let sectionArrowClass = isSectionContentRelevant || !keyword ? 'expanded' : '';
 
                                         if (section.field === '肆、本次會議報告及討論事項') {
                                             let subSectionsHtml = '';
