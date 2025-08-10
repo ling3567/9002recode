@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會議內容輸入</title>
+    <title>會議內容輸入/編輯</title>
     <!-- 引入 Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -16,8 +16,9 @@
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">會議內容輸入</h1>
+        <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
         <form id="meetingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <input type="hidden" id="rowIndex" name="rowIndex">
             <!-- 會議名稱 -->
             <div>
                 <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
@@ -130,6 +131,13 @@
                     提交會議內容
                 </button>
             </div>
+            
+            <div class="md:col-span-2 flex justify-center mt-4">
+                <button type="button" id="deleteButton"
+                        class="hidden px-8 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    刪除會議紀錄
+                </button>
+            </div>
         </form>
 
         <!-- 訊息顯示區塊 -->
@@ -145,18 +153,82 @@
             const startTimeInput = document.getElementById('startTime');
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
+            const formTitle = document.getElementById('formTitle');
+            const rowIndexInput = document.getElementById('rowIndex');
+            const deleteButton = document.getElementById('deleteButton');
 
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
-            // 自動填入建立時間為當前時間
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            creationTimeInput.value = now.toISOString().slice(0, 16);
+            // 處理日期格式
+            function toYYYYMMDD(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
 
-            // 設定開始時間預設為 12:30 PM
-            startTimeInput.value = '12:30';
+            // 載入資料的函數
+            async function loadMeetingData(rowIndex) {
+                formTitle.textContent = '編輯會議內容';
+                deleteButton.classList.remove('hidden');
+                
+                messageText.textContent = '正在載入資料...';
+                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
 
+                try {
+                    const url = `${APPS_SCRIPT_WEB_APP_URL}?action=getRecord&rowIndex=${rowIndex}`;
+                    const response = await fetch(url);
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        const data = result.data;
+                        document.getElementById('meetingName').value = data['會議名稱'];
+                        document.getElementById('meetingDate').value = data['會議日期'];
+                        document.getElementById('startTime').value = data['開始時間'];
+                        document.getElementById('endTime').value = data['結束時間'];
+                        document.getElementById('location').value = data['會議地點'];
+                        document.getElementById('chairman').value = data['主席'];
+                        document.getElementById('awards').value = data['壹、頒獎表揚'];
+                        document.getElementById('chairmanReport').value = data['貳、主席報告'];
+                        document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'];
+                        document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'];
+                        document.getElementById('adHocMotion').value = data['伍、臨時動議'];
+                        document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'];
+                        document.getElementById('chairmanConclusion').value = data['柒、主席結論'];
+                        document.getElementById('attachmentName').value = data['附件名稱'];
+                        document.getElementById('creationTime').value = data['建立時間'];
+                        rowIndexInput.value = rowIndex; // Store the row index
+
+                        messageContainer.classList.add('hidden');
+                    } else {
+                        messageText.textContent = '載入資料失敗: ' + (result.message || '未知錯誤');
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    }
+                } catch (error) {
+                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。';
+                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    console.error('載入資料時發生錯誤:', error);
+                }
+            }
+            
+            // 頁面載入時檢查是否為編輯模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const editRowIndex = urlParams.get('editRow');
+            if (editRowIndex) {
+                loadMeetingData(editRowIndex);
+            } else {
+                // 如果是新增模式，設定預設值
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                creationTimeInput.value = now.toISOString().slice(0, 16);
+                startTimeInput.value = '12:30';
+            }
+
+            // 表單提交事件處理
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
 
@@ -169,7 +241,14 @@
                 for (let [key, value] of formData.entries()) {
                     meetingData[key] = value;
                 }
-                meetingData['建立時間'] = creationTimeInput.value;
+                
+                const isUpdate = !!rowIndexInput.value;
+                if (isUpdate) {
+                    meetingData.action = 'updateRecord';
+                    meetingData.rowIndex = rowIndexInput.value;
+                } else {
+                    meetingData.action = 'addRecord';
+                }
 
                 console.log('準備提交的會議資料:', meetingData);
 
@@ -182,16 +261,15 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        messageText.textContent = '會議內容已成功儲存到 Google 試算表！';
+                        messageText.textContent = isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！';
                         messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
                         messageContainer.classList.add('bg-green-100', 'text-green-800');
-                        form.reset();
                         
-                        const newNow = new Date();
-                        newNow.setMinutes(newNow.getMinutes() - newNow.getTimezoneOffset());
-                        creationTimeInput.value = newNow.toISOString().slice(0, 16);
-                        
-                        startTimeInput.value = '12:30';
+                        // 提交成功後，導向回主頁面
+                        setTimeout(() => {
+                           window.location.href = 'index.html';
+                        }, 2000);
+
                     } else {
                         messageText.textContent = '儲存失敗: ' + (result.message || '未知錯誤');
                         messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
@@ -206,6 +284,47 @@
                     setTimeout(() => {
                         messageContainer.classList.add('hidden');
                     }, 3000);
+                }
+            });
+            
+            // 刪除按鈕點擊事件
+            deleteButton.addEventListener('click', async () => {
+                if (!confirm('確定要刪除這筆會議紀錄嗎？')) {
+                    return;
+                }
+                
+                messageText.textContent = '正在刪除資料中...';
+                messageContainer.classList.remove('hidden');
+                messageContainer.classList.remove('bg-red-100', 'text-red-800');
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+
+                try {
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            action: 'deleteRecord',
+                            rowIndex: rowIndexInput.value
+                        })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        messageText.textContent = '會議紀錄已成功刪除！';
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+                        setTimeout(() => {
+                           window.location.href = 'index.html';
+                        }, 2000);
+                    } else {
+                        messageText.textContent = '刪除失敗: ' + (result.message || '未知錯誤');
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    }
+                } catch (error) {
+                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。';
+                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    console.error('刪除資料時發生錯誤:', error);
                 }
             });
         });
