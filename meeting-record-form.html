@@ -160,14 +160,6 @@
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
-            // 處理日期格式
-            function toYYYYMMDD(date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-
             // 載入資料的函數
             async function loadMeetingData(rowIndex) {
                 formTitle.textContent = '編輯會議內容';
@@ -184,23 +176,25 @@
 
                     if (result.success && result.data) {
                         const data = result.data;
-                        document.getElementById('meetingName').value = data['會議名稱'];
-                        document.getElementById('meetingDate').value = data['會議日期'];
-                        document.getElementById('startTime').value = data['開始時間'];
-                        document.getElementById('endTime').value = data['結束時間'];
-                        document.getElementById('location').value = data['會議地點'];
-                        document.getElementById('chairman').value = data['主席'];
-                        document.getElementById('awards').value = data['壹、頒獎表揚'];
-                        document.getElementById('chairmanReport').value = data['貳、主席報告'];
-                        document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'];
-                        document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'];
-                        document.getElementById('adHocMotion').value = data['伍、臨時動議'];
-                        document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'];
-                        document.getElementById('chairmanConclusion').value = data['柒、主席結論'];
-                        document.getElementById('attachmentName').value = data['附件名稱'];
-                        document.getElementById('creationTime').value = data['建立時間'];
-                        rowIndexInput.value = rowIndex; // Store the row index
+                        document.getElementById('meetingName').value = data['會議名稱'] || '';
+                        document.getElementById('meetingDate').value = data['會議日期'] || '';
+                        document.getElementById('startTime').value = data['開始時間'] || '';
+                        document.getElementById('endTime').value = data['結束時間'] || '';
+                        document.getElementById('location').value = data['會議地點'] || '';
+                        document.getElementById('chairman').value = data['主席'] || '';
+                        document.getElementById('awards').value = data['壹、頒獎表揚'] || '';
+                        document.getElementById('chairmanReport').value = data['貳、主席報告'] || '';
+                        document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'] || '';
+                        document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'] || '';
+                        document.getElementById('adHocMotion').value = data['伍、臨時動議'] || '';
+                        document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
+                        document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
+                        document.getElementById('attachmentName').value = data['附件名稱'] || '';
+                        
+                        // 建立時間使用舊資料，而不是當下時間
+                        document.getElementById('creationTime').value = data['建立時間'] || '';
 
+                        rowIndexInput.value = rowIndex; // Store the row index
                         messageContainer.classList.add('hidden');
                     } else {
                         messageText.textContent = '載入資料失敗: ' + (result.message || '未知錯誤');
@@ -222,6 +216,9 @@
                 loadMeetingData(editRowIndex);
             } else {
                 // 如果是新增模式，設定預設值
+                formTitle.textContent = '新增會議內容';
+                deleteButton.classList.add('hidden');
+                
                 const now = new Date();
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                 creationTimeInput.value = now.toISOString().slice(0, 16);
@@ -246,8 +243,12 @@
                 if (isUpdate) {
                     meetingData.action = 'updateRecord';
                     meetingData.rowIndex = rowIndexInput.value;
+                    // 在編輯模式下，建立時間保留舊值
+                    meetingData['建立時間'] = creationTimeInput.value;
                 } else {
                     meetingData.action = 'addRecord';
+                    // 在新增模式下，建立時間使用當下值
+                    meetingData['建立時間'] = new Date().toISOString().slice(0, 16);
                 }
 
                 console.log('準備提交的會議資料:', meetingData);
@@ -265,7 +266,6 @@
                         messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
                         messageContainer.classList.add('bg-green-100', 'text-green-800');
                         
-                        // 提交成功後，導向回主頁面
                         setTimeout(() => {
                            window.location.href = 'index.html';
                         }, 2000);
@@ -331,3 +331,4 @@
     </script>
 </body>
 </html>
+
