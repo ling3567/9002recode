@@ -306,20 +306,20 @@
                     return dateTimeString;
                 }
             }
-
+            
             // 將文本中的 URL 轉換為可點擊的按鈕
             function formatAttachmentLinks(text, keyword) {
                 if (!text) return '';
                 const lines = text.split('\n').filter(line => line.trim() !== '');
                 let html = '';
-                lines.forEach((line, index) => {
+                lines.forEach((line) => {
                     const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
                     const url = urlMatch ? urlMatch[0] : '';
                     
                     if (url) {
                         const descriptionMatch = line.match(/^(.*?):/);
                         const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-                        const displayTitle = description || `附件點選`;
+                        const displayTitle = description || '附件點選';
                         
                         const isRelevant = keyword ? (description + url).toLowerCase().includes(keyword.toLowerCase()) : true;
                         
@@ -403,7 +403,10 @@
                                 meetingCard.className = 'bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 mb-4';
 
                                 let cardHtml = `
-                                    <h3 class="text-xl font-semibold text-gray-800 mb-2">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h3 class="text-xl font-semibold text-gray-800">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
+                                        <button class="edit-button px-4 py-2 bg-gray-300 text-gray-800 font-medium rounded-lg shadow-sm hover:bg-gray-400 transition-colors duration-150 ease-in-out" data-row-index="${meeting.rowIndex}">編輯</button>
+                                    </div>
                                     <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(formatTime(meeting['開始時間']), keyword)} - ${highlightKeyword(formatTime(meeting['結束時間']), keyword)}</p>
                                     <p class="text-gray-600 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
@@ -636,26 +639,9 @@
                 }
             }
 
-            searchButton.addEventListener('click', () => {
-                const keyword = keywordInput.value.trim();
-                const startDate = startDateInput.value;
-                const endDate = endDateInput.value;
-                performSearch(keyword, startDate, endDate);
-            });
+            // --- 登入功能相關邏輯 ---
 
-            showAllButton.addEventListener('click', () => {
-                keywordInput.value = '';
-                startDateInput.value = '';
-                endDateInput.value = '';
-                performSearch('', '', '', true);
-            });
-
-            keywordInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    searchButton.click();
-                }
-            });
-
+            // 點擊新增會議內容按鈕，顯示登入視窗
             addMeetingButton.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
@@ -663,8 +649,29 @@
                 passwordInput.value = '';
                 loginMessage.classList.add('hidden');
                 usernameInput.focus();
+                
+                // 設置目標 URL 為新增模式
+                loginButton.dataset.targetUrl = MEETING_INPUT_PAGE_URL;
             });
 
+            // 點擊編輯按鈕，顯示登入視窗
+            document.addEventListener('click', (event) => {
+                if (event.target.classList.contains('edit-button')) {
+                    const rowIndex = event.target.dataset.rowIndex;
+                    loginModal.classList.remove('hidden');
+                    loginModal.classList.add('flex');
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                    loginMessage.classList.add('hidden');
+                    usernameInput.focus();
+                    
+                    // 設置目標 URL 為編輯模式，並帶上行號參數
+                    loginButton.dataset.targetUrl = `${MEETING_INPUT_PAGE_URL}?editRow=${rowIndex}`;
+                }
+            });
+
+
+            // 點擊登入視窗的背景或取消按鈕，隱藏登入視窗
             loginModal.addEventListener('click', (event) => {
                 if (event.target === loginModal) {
                     loginModal.classList.add('hidden');
@@ -676,6 +683,7 @@
                 loginModal.classList.remove('flex');
             });
 
+            // 登入按鈕點擊事件
             loginButton.addEventListener('click', () => {
                 const username = usernameInput.value;
                 const password = passwordInput.value;
@@ -684,13 +692,15 @@
                     loginMessage.classList.add('hidden');
                     loginModal.classList.add('hidden');
                     loginModal.classList.remove('flex');
-                    window.location.href = MEETING_INPUT_PAGE_URL;
+                    const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL;
+                    window.location.href = targetUrl;
                 } else {
                     loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
                     loginMessage.classList.remove('hidden');
                 }
             });
 
+            // 允許在登入視窗中按 Enter 鍵進行登入
             usernameInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     passwordInput.focus();
@@ -702,6 +712,7 @@
                 }
             });
 
+            // --- 文件預覽模態視窗邏輯 ---
             window.openDocumentViewer = function(url) {
                 let embedUrl = url;
                 if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
@@ -729,12 +740,35 @@
                 }
             });
             
+            // 頁面載入時自動執行查詢
             const urlParams = new URLSearchParams(window.location.search);
             if (!urlParams.get('keyword') && !urlParams.get('startDate') && !urlParams.get('endDate')) {
                 performSearch('', '', '', true);
             }
+            
+            // 搜尋按鈕點擊事件
+            searchButton.addEventListener('click', () => {
+                const keyword = keywordInput.value.trim();
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                performSearch(keyword, startDate, endDate);
+            });
+
+            // 顯示所有會議按鈕點擊事件
+            showAllButton.addEventListener('click', () => {
+                keywordInput.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                performSearch('', '', ''); // 這裡不傳遞 showLatest=true，所以會顯示所有紀錄
+            });
+
+            // 允許按 Enter 鍵進行搜尋
+            keywordInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    searchButton.click();
+                }
+            });
         });
     </script>
 </body>
 </html>
-
