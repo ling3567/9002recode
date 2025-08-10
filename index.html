@@ -555,13 +555,15 @@
                                         const descriptionMatch = attachmentLine.match(/^(.*?):/);
                                         const description = descriptionMatch ? descriptionMatch[1].trim() : '';
 
+                                        const displayTitle = (!description || description.toLowerCase().startsWith('http')) ? '附件查閱' : description;
+
                                         if (url) {
                                             const isLinkRelevant = keyword ? (description + url).toLowerCase().includes(lowerKeyword) : true;
                                             if (isLinkRelevant) {
                                                 attachmentLinksHtml += `
                                                     <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
                                                         <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
-                                                            ${highlightKeyword(description || '附件點選', keyword)}
+                                                            ${highlightKeyword(displayTitle, keyword)}
                                                         </button>
                                                     </div>
                                                 `;
