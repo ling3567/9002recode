@@ -306,7 +306,7 @@
                     return dateTimeString;
                 }
             }
-            
+
             // 將文本中的 URL 轉換為可點擊的按鈕
             function formatAttachmentLinks(text, keyword) {
                 if (!text) return '';
@@ -393,7 +393,11 @@
                             let displayedMeetingsCount = 0;
 
                             result.data.forEach(meeting => {
-                                if (!containsKeyword(meeting, keyword)) {
+                                // 判斷是否需要顯示該會議卡片
+                                const shouldDisplayCard = keyword || startDate || endDate;
+
+                                // 如果是關鍵字或日期查詢，且不包含關鍵字，則跳過此會議紀錄
+                                if (shouldDisplayCard && !containsKeyword(meeting, keyword)) {
                                     return;
                                 }
 
@@ -429,10 +433,11 @@
 
                                     const isSectionContentRelevant = keyword ? lowerContent.includes(lowerKeyword) : false;
                                     
-                                    const sectionExpandedClass = isSectionContentRelevant || (showLatest && !keyword) ? 'expanded' : '';
-                                    const sectionArrowClass = isSectionContentRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                    const shouldExpand = keyword || startDate || endDate;
+                                    const sectionExpandedClass = shouldExpand ? 'expanded' : '';
+                                    const sectionArrowClass = shouldExpand ? 'expanded' : '';
 
-                                    if (content.trim() !== '' && (isSectionContentRelevant || !keyword)) {
+                                    if (content.trim() !== '' && (isSectionContentRelevant || !shouldDisplayCard)) {
                                         let sectionContentHtml = '';
 
                                         if (section.field === '肆、本次會議報告及討論事項') {
@@ -453,7 +458,7 @@
                                                 const fullSubSectionText = match[0].trim();
                                                 const isSubSectionRelevant = keyword ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : false;
 
-                                                if (isSubSectionRelevant || !keyword) {
+                                                if (isSubSectionRelevant || !shouldDisplayCard) {
                                                     if (isSubSectionRelevant) {
                                                         foundRelevantSubSectionInThisSection = true;
                                                     }
@@ -462,8 +467,8 @@
                                                     const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '';
                                                     const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
 
-                                                    const subSectionExpandedClass = isSubSectionRelevant || (showLatest && !keyword) ? 'expanded' : '';
-                                                    const subSectionArrowClass = isSubSectionRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                                    const subSectionExpandedClass = isSubSectionRelevant || (shouldExpand && !keyword) ? 'expanded' : '';
+                                                    const subSectionArrowClass = isSubSectionRelevant || (shouldExpand && !keyword) ? 'expanded' : '';
 
                                                     const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
 
@@ -496,7 +501,7 @@
                                                 subSectionsHtml += `<p>${highlightKeyword(remainingContent.replace(/\n/g, '<br>'), keyword)}</p>`;
                                             }
 
-                                            if (isSectionContentRelevant || foundRelevantSubSectionInThisSection || !keyword) {
+                                            if (isSectionContentRelevant || foundRelevantSubSectionInThisSection || !shouldDisplayCard) {
                                                 cardHtml += `
                                                     <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                         <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
@@ -558,7 +563,7 @@
                                         const url = urlMatch ? urlMatch[0] : '';
                                         const descriptionMatch = attachmentLine.match(/^(.*?):/);
                                         const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-                                        
+
                                         if (url) {
                                             const isLinkRelevant = keyword ? (description + url).toLowerCase().includes(lowerKeyword) : true;
                                             if (isLinkRelevant) {
@@ -639,9 +644,26 @@
                 }
             }
 
-            // --- 登入功能相關邏輯 ---
+            searchButton.addEventListener('click', () => {
+                const keyword = keywordInput.value.trim();
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                performSearch(keyword, startDate, endDate);
+            });
 
-            // 點擊新增會議內容按鈕，顯示登入視窗
+            showAllButton.addEventListener('click', () => {
+                keywordInput.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                performSearch('', '', '', true);
+            });
+
+            keywordInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    searchButton.click();
+                }
+            });
+
             addMeetingButton.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
@@ -654,7 +676,6 @@
                 loginButton.dataset.targetUrl = MEETING_INPUT_PAGE_URL;
             });
 
-            // 點擊編輯按鈕，顯示登入視窗
             document.addEventListener('click', (event) => {
                 if (event.target.classList.contains('edit-button')) {
                     const rowIndex = event.target.dataset.rowIndex;
@@ -665,13 +686,11 @@
                     loginMessage.classList.add('hidden');
                     usernameInput.focus();
                     
-                    // 設置目標 URL 為編輯模式，並帶上行號參數
                     loginButton.dataset.targetUrl = `${MEETING_INPUT_PAGE_URL}?editRow=${rowIndex}`;
                 }
             });
 
 
-            // 點擊登入視窗的背景或取消按鈕，隱藏登入視窗
             loginModal.addEventListener('click', (event) => {
                 if (event.target === loginModal) {
                     loginModal.classList.add('hidden');
@@ -683,7 +702,6 @@
                 loginModal.classList.remove('flex');
             });
 
-            // 登入按鈕點擊事件
             loginButton.addEventListener('click', () => {
                 const username = usernameInput.value;
                 const password = passwordInput.value;
@@ -700,7 +718,6 @@
                 }
             });
 
-            // 允許在登入視窗中按 Enter 鍵進行登入
             usernameInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     passwordInput.focus();
@@ -712,7 +729,6 @@
                 }
             });
 
-            // --- 文件預覽模態視窗邏輯 ---
             window.openDocumentViewer = function(url) {
                 let embedUrl = url;
                 if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
@@ -740,34 +756,10 @@
                 }
             });
             
-            // 頁面載入時自動執行查詢
             const urlParams = new URLSearchParams(window.location.search);
             if (!urlParams.get('keyword') && !urlParams.get('startDate') && !urlParams.get('endDate')) {
                 performSearch('', '', '', true);
             }
-            
-            // 搜尋按鈕點擊事件
-            searchButton.addEventListener('click', () => {
-                const keyword = keywordInput.value.trim();
-                const startDate = startDateInput.value;
-                const endDate = endDateInput.value;
-                performSearch(keyword, startDate, endDate);
-            });
-
-            // 顯示所有會議按鈕點擊事件
-            showAllButton.addEventListener('click', () => {
-                keywordInput.value = '';
-                startDateInput.value = '';
-                endDateInput.value = '';
-                performSearch('', '', ''); // 這裡不傳遞 showLatest=true，所以會顯示所有紀錄
-            });
-
-            // 允許按 Enter 鍵進行搜尋
-            keywordInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    searchButton.click();
-                }
-            });
         });
     </script>
 </body>
