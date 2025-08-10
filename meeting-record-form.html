@@ -142,7 +142,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('meetingForm');
             const creationTimeInput = document.getElementById('creationTime');
-            const startTimeInput = document.getElementById('startTime'); // Get the start time input
+            const startTimeInput = document.getElementById('startTime');
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
 
@@ -151,51 +151,46 @@
 
             // 自動填入建立時間為當前時間
             const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // 調整時區
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             creationTimeInput.value = now.toISOString().slice(0, 16);
 
             // 設定開始時間預設為 12:30 PM
             startTimeInput.value = '12:30';
 
             form.addEventListener('submit', async (event) => {
-                event.preventDefault(); // 防止表單預設提交行為
+                event.preventDefault();
 
-                // 顯示載入訊息
                 messageText.textContent = '正在提交資料中，請稍候...';
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                messageContainer.classList.add('bg-blue-100', 'text-blue-800'); // 載入中顏色
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
 
                 const formData = new FormData(form);
                 const meetingData = {};
                 for (let [key, value] of formData.entries()) {
                     meetingData[key] = value;
                 }
-                meetingData['建立時間'] = creationTimeInput.value; // 確保建立時間被正確包含
+                meetingData['建立時間'] = creationTimeInput.value;
 
                 console.log('準備提交的會議資料:', meetingData);
 
                 try {
-                    // 使用 fetch API 將資料 POST 到 Apps Script Web 應用程式
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                         method: 'POST',
-                        // Apps Script 期望的是表單資料格式，而不是 JSON
-                        // 所以我們使用 URLSearchParams 來處理 FormData
                         body: new URLSearchParams(meetingData),
-                        // 'Content-Type': 'application/x-www-form-urlencoded' 會由 URLSearchParams 自動設定
                     });
 
-                    const result = await response.json(); // 解析 Apps Script 返回的 JSON
+                    const result = await response.json();
 
                     if (result.success) {
                         messageText.textContent = '會議內容已成功儲存到 Google 試算表！';
                         messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
                         messageContainer.classList.add('bg-green-100', 'text-green-800');
-                        form.reset(); // 清空表單
-                        // 重新設定建立時間
+                        form.reset();
+                        
                         const newNow = new Date();
                         newNow.setMinutes(newNow.getMinutes() - newNow.getTimezoneOffset());
                         creationTimeInput.value = newNow.toISOString().slice(0, 16);
-                        // 重新設定開始時間
+                        
                         startTimeInput.value = '12:30';
                     } else {
                         messageText.textContent = '儲存失敗: ' + (result.message || '未知錯誤');
@@ -208,7 +203,6 @@
                     messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
                     messageContainer.classList.add('bg-red-100', 'text-red-800');
                 } finally {
-                    // 3秒後隱藏訊息
                     setTimeout(() => {
                         messageContainer.classList.add('hidden');
                     }, 3000);
