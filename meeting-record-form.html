@@ -17,6 +17,26 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
         <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
+        
+        <!-- 檔案解析區域 -->
+        <div class="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">上傳會議紀錄檔案並自動解析</h2>
+            <p class="text-sm text-gray-500 mb-4">請上傳文字檔 (.txt) 或 Word 檔 (.docx)，程式會嘗試自動解析並填入下方欄位。</p>
+            <div class="flex items-center space-x-4">
+                <input type="file" id="fileInput"
+                       class="flex-grow block w-full text-sm text-gray-500
+                       file:mr-4 file:py-2 file:px-4
+                       file:rounded-md file:border-0
+                       file:text-sm file:font-semibold
+                       file:bg-blue-50 file:text-blue-700
+                       hover:file:bg-blue-100">
+                <button type="button" id="parseFileButton"
+                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    解析檔案
+                </button>
+            </div>
+        </div>
+
         <form id="meetingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <input type="hidden" id="rowIndex" name="rowIndex">
             <!-- 會議名稱 -->
@@ -146,6 +166,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('meetingForm');
@@ -156,6 +177,8 @@
             const formTitle = document.getElementById('formTitle');
             const rowIndexInput = document.getElementById('rowIndex');
             const deleteButton = document.getElementById('deleteButton');
+            const fileInput = document.getElementById('fileInput');
+            const parseFileButton = document.getElementById('parseFileButton');
 
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
@@ -190,11 +213,9 @@
                         document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
                         document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
                         document.getElementById('attachmentName').value = data['附件名稱'] || '';
-                        
-                        // 建立時間使用舊資料，而不是當下時間
                         document.getElementById('creationTime').value = data['建立時間'] || '';
-
                         rowIndexInput.value = rowIndex; // Store the row index
+
                         messageContainer.classList.add('hidden');
                     } else {
                         messageText.textContent = '載入資料失敗: ' + (result.message || '未知錯誤');
@@ -224,6 +245,89 @@
                 creationTimeInput.value = now.toISOString().slice(0, 16);
                 startTimeInput.value = '12:30';
             }
+            
+            // 檔案解析按鈕事件
+            parseFileButton.addEventListener('click', async () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert('請選擇一個檔案！');
+                    return;
+                }
+
+                messageText.textContent = '正在解析檔案...';
+                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+
+                try {
+                    let fileContent = '';
+                    const fileReader = new FileReader();
+
+                    if (file.name.endsWith('.docx')) {
+                        // 使用 mammoth.js 讀取 .docx
+                        fileContent = await new Promise((resolve, reject) => {
+                            fileReader.onload = (e) => {
+                                mammoth.extractRawText({arrayBuffer: e.target.result})
+                                    .then(result => resolve(result.value))
+                                    .catch(reject);
+                            };
+                            fileReader.readAsArrayBuffer(file);
+                        });
+                    } else {
+                        // 讀取其他文本檔案 (如 .txt)
+                        fileContent = await new Promise((resolve, reject) => {
+                            fileReader.onload = (e) => resolve(e.target.result);
+                            fileReader.onerror = (e) => reject(e);
+                            fileReader.readAsText(file);
+                        });
+                    }
+
+                    // 呼叫 Apps Script 進行 AI 解析
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            action: 'parseFileContent',
+                            fileContent: fileContent
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        const parsedData = result.data;
+                        document.getElementById('meetingName').value = parsedData['會議名稱'] || '';
+                        document.getElementById('meetingDate').value = parsedData['會議日期'] || '';
+                        document.getElementById('startTime').value = parsedData['開始時間'] || '';
+                        document.getElementById('endTime').value = parsedData['結束時間'] || '';
+                        document.getElementById('location').value = parsedData['會議地點'] || '';
+                        document.getElementById('chairman').value = parsedData['主席'] || '';
+                        document.getElementById('awards').value = parsedData['壹、頒獎表揚'] || '';
+                        document.getElementById('chairmanReport').value = parsedData['貳、主席報告'] || '';
+                        document.getElementById('lastMeetingFollowUp').value = parsedData['參、上次會議追蹤事項'] || '';
+                        document.getElementById('currentMeetingDiscussion').value = parsedData['肆、本次會議報告及討論事項'] || '';
+                        document.getElementById('adHocMotion').value = parsedData['伍、臨時動議'] || '';
+                        document.getElementById('nextMeetingFollowUp').value = parsedData['陸、下次會議追蹤事項'] || '';
+                        document.getElementById('chairmanConclusion').value = parsedData['柒、主席結論'] || '';
+                        document.getElementById('attachmentName').value = parsedData['附件名稱'] || '';
+                        
+                        messageText.textContent = '檔案解析成功，資料已填入表單！';
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+                    } else {
+                        messageText.textContent = '解析失敗: ' + (result.message || '未知錯誤');
+                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    }
+                } catch (error) {
+                    messageText.textContent = '解析檔案時發生錯誤。請檢查檔案格式或 Apps Script。';
+                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
+                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    console.error('檔案解析錯誤:', error);
+                } finally {
+                    setTimeout(() => {
+                        messageContainer.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+
 
             // 表單提交事件處理
             form.addEventListener('submit', async (event) => {
