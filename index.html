@@ -433,12 +433,13 @@
 
                                     const isSectionContentRelevant = keyword ? lowerContent.includes(lowerKeyword) : false;
                                     
-                                    const shouldExpand = keyword || startDate || endDate;
-                                    const sectionExpandedClass = shouldExpand ? 'expanded' : '';
-                                    const sectionArrowClass = shouldExpand ? 'expanded' : '';
+                                    // 判斷是否需要展開：有關鍵字，或有日期範圍，或無搜尋條件時
+                                    const shouldExpand = keyword || (startDate && endDate) || showLatest;
 
-                                    if (content.trim() !== '' && (isSectionContentRelevant || !shouldDisplayCard)) {
-                                        let sectionContentHtml = '';
+                                    // 確保只有有內容的區塊才生成
+                                    if (content.trim() !== '') {
+                                        const sectionExpandedClass = shouldExpand ? 'expanded' : '';
+                                        const sectionArrowClass = shouldExpand ? 'expanded' : '';
 
                                         if (section.field === '肆、本次會議報告及討論事項') {
                                             let subSectionsHtml = '';
@@ -452,47 +453,39 @@
                                             }
                                             subSectionsRegex.lastIndex = 0;
 
-                                            let foundRelevantSubSectionInThisSection = false;
-
                                             while ((match = subSectionsRegex.exec(content)) !== null) {
                                                 const fullSubSectionText = match[0].trim();
                                                 const isSubSectionRelevant = keyword ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : false;
 
-                                                if (isSubSectionRelevant || !shouldDisplayCard) {
-                                                    if (isSubSectionRelevant) {
-                                                        foundRelevantSubSectionInThisSection = true;
+                                                const subSectionExpandedClass = isSubSectionRelevant || shouldExpand ? 'expanded' : '';
+                                                const subSectionArrowClass = isSubSectionRelevant || shouldExpand ? 'expanded' : '';
+
+                                                const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十\d]+[、．][^：]*[：]?)/);
+                                                const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '';
+                                                const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
+
+                                                const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
+
+                                                const formattedSubSectionBody = subSectionBody.split('\n').map(line => {
+                                                    if (/^\(\d+\)[、.]?/.test(line.trim())) {
+                                                        return `<p class="ml-8">${highlightKeyword(line, keyword)}</p>`;
                                                     }
+                                                    return `<p>${highlightKeyword(line, keyword)}</p>`;
+                                                }).join('');
 
-                                                    const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十\d]+[、．][^：]*[：]?)/);
-                                                    const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '';
-                                                    const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
-
-                                                    const subSectionExpandedClass = isSubSectionRelevant || (shouldExpand && !keyword) ? 'expanded' : '';
-                                                    const subSectionArrowClass = isSubSectionRelevant || (shouldExpand && !keyword) ? 'expanded' : '';
-
-                                                    const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
-
-                                                    const formattedSubSectionBody = subSectionBody.split('\n').map(line => {
-                                                        if (/^\(\d+\)[、.]?/.test(line.trim())) {
-                                                            return `<p class="ml-8">${highlightKeyword(line, keyword)}</p>`;
-                                                        }
-                                                        return `<p>${highlightKeyword(line, keyword)}</p>`;
-                                                    }).join('');
-
-                                                    subSectionsHtml += `
-                                                        <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
-                                                            <div class="flex justify-between items-center cursor-pointer section-header" data-target="${subSectionId}">
-                                                                <h5 class="text-base font-semibold text-gray-700">${highlightKeyword(subSectionTitle, keyword)}</h5>
-                                                                <svg class="arrow-icon w-4 h-4 text-gray-500 ${subSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                                </svg>
-                                                            </div>
-                                                            <div id="${subSectionId}" class="section-content mt-1 text-gray-600 text-sm ${subSectionExpandedClass}">
-                                                                ${formattedSubSectionBody}
-                                                            </div>
+                                                subSectionsHtml += `
+                                                    <div class="mt-2 bg-gray-100 p-3 rounded-md border border-gray-100">
+                                                        <div class="flex justify-between items-center cursor-pointer section-header" data-target="${subSectionId}">
+                                                            <h5 class="text-base font-semibold text-gray-700">${highlightKeyword(subSectionTitle, keyword)}</h5>
+                                                            <svg class="arrow-icon w-4 h-4 text-gray-500 ${subSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                            </svg>
                                                         </div>
-                                                    `;
-                                                }
+                                                        <div id="${subSectionId}" class="section-content mt-1 text-gray-600 text-sm ${subSectionExpandedClass}">
+                                                            ${formattedSubSectionBody}
+                                                        </div>
+                                                    </div>
+                                                `;
                                                 lastIndex = subSectionsRegex.lastIndex;
                                             }
 
@@ -501,21 +494,19 @@
                                                 subSectionsHtml += `<p>${highlightKeyword(remainingContent.replace(/\n/g, '<br>'), keyword)}</p>`;
                                             }
 
-                                            if (isSectionContentRelevant || foundRelevantSubSectionInThisSection || !shouldDisplayCard) {
-                                                cardHtml += `
-                                                    <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                        <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
-                                                            <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
-                                                            <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                            </svg>
-                                                        </div>
-                                                        <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${sectionExpandedClass}">
-                                                            ${subSectionsHtml}
-                                                        </div>
+                                            cardHtml += `
+                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
+                                                        <h4 class="text-lg font-semibold text-gray-800">${section.title}</h4>
+                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                        </svg>
                                                     </div>
-                                                `;
-                                            }
+                                                    <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${sectionExpandedClass}">
+                                                        ${subSectionsHtml}
+                                                    </div>
+                                                </div>
+                                            `;
 
                                         } else {
                                             sectionContentHtml = content.split('\n').map(line => {
@@ -551,8 +542,8 @@
                                 const isAttachmentRelevant = keyword ? lowerAttachmentContent.includes(lowerKeyword) : false;
 
                                 if (attachmentContent.trim() !== '' && (isAttachmentRelevant || !keyword)) {
-                                    const attachmentExpandedClass = isAttachmentRelevant || (showLatest && !keyword) ? 'expanded' : '';
-                                    const attachmentArrowClass = isAttachmentRelevant || (showLatest && !keyword) ? 'expanded' : '';
+                                    const attachmentExpandedClass = isAttachmentRelevant || (showLatest && !keyword) || (startDate || endDate) ? 'expanded' : '';
+                                    const attachmentArrowClass = isAttachmentRelevant || (showLatest && !keyword) || (startDate || endDate) ? 'expanded' : '';
                                     const attachmentSectionId = '附件';
 
                                     const attachments = attachmentContent.split('\n').filter(line => line.trim() !== '');
