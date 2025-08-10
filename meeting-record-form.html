@@ -213,9 +213,11 @@
                         document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
                         document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
                         document.getElementById('attachmentName').value = data['附件名稱'] || '';
+                        
+                        // 建立時間使用舊資料，而不是當下時間
                         document.getElementById('creationTime').value = data['建立時間'] || '';
-                        rowIndexInput.value = rowIndex; // Store the row index
 
+                        rowIndexInput.value = rowIndex; // Store the row index
                         messageContainer.classList.add('hidden');
                     } else {
                         messageText.textContent = '載入資料失敗: ' + (result.message || '未知錯誤');
@@ -382,7 +384,7 @@
                 } catch (error) {
                     console.error('發送資料到 Apps Script 時發生錯誤:', error);
                     messageText.textContent = '網路錯誤或 Apps Script 發生問題。請檢查控制台。';
-                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
+                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
                     messageContainer.classList.add('bg-red-100', 'text-red-800');
                 } finally {
                     setTimeout(() => {
@@ -435,4 +437,3 @@
     </script>
 </body>
 </html>
-
