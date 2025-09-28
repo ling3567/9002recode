@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月份區塊關鍵字搜尋</title>
+    <style>
+        body {
+            font-family: "Noto Sans TC", sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 2rem 1rem;
+            color: #1f2933;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar input {
+            flex: 1 1 280px;
+            padding: 0.65rem 0.9rem;
+            font-size: 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        .month-section {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .month-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .entry {
+            border-left: 4px solid #3b82f6;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+        }
+
+        .entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .entry h3 {
+            margin: 0 0 0.35rem;
+            font-size: 1.1rem;
+        }
+
+        .entry p {
+            margin: 0.25rem 0 0;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        mark {
+            background-color: #fde68a;
+            padding: 0.15rem 0.25rem;
+            border-radius: 0.35rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 2rem 0;
+            font-size: 1.05rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <h1>月份區塊關鍵字搜尋</h1>
+        <div class="search-bar">
+            <input type="text" id="keywordInput" placeholder="輸入關鍵字，例如：臨床" aria-label="搜尋月份區塊">
+        </div>
+
+        <section class="month-section" data-month="2024-01">
+            <h2 class="month-title">2024 年 1 月</h2>
+            <article class="entry">
+                <h3>臨床照護小組進度回報</h3>
+                <p>臨床照護小組說明今年的臨床品質評估指標，並提出病人安全行動方案。</p>
+            </article>
+            <article class="entry">
+                <h3>教育訓練安排</h3>
+                <p>排定 1 月份臨床技能訓練課程，以及跨部門合作教學。</p>
+            </article>
+        </section>
+
+        <section class="month-section" data-month="2024-02">
+            <h2 class="month-title">2024 年 2 月</h2>
+            <article class="entry">
+                <h3>品質管理檢討</h3>
+                <p>回顧臨床指標達成率，針對不符標準之項目制定改善計畫。</p>
+            </article>
+            <article class="entry">
+                <h3>資訊系統更新</h3>
+                <p>資訊部門說明病歷系統升級時程，並確認臨床端測試需求。</p>
+            </article>
+        </section>
+
+        <section class="month-section" data-month="2024-03">
+            <h2 class="month-title">2024 年 3 月</h2>
+            <article class="entry">
+                <h3>研究倫理審查</h3>
+                <p>通過三項臨床研究計畫，強調個案追蹤與資料保護。</p>
+            </article>
+            <article class="entry">
+                <h3>社區合作計畫</h3>
+                <p>與地方衛生所合作推動長者臨床保健篩檢活動。</p>
+            </article>
+        </section>
+
+        <p id="emptyMessage" class="empty-state hidden">找不到符合關鍵字的內容。</p>
+    </main>
+
+    <script>
+        const keywordInput = document.getElementById('keywordInput');
+        const monthSections = Array.from(document.querySelectorAll('.month-section'));
+        const emptyMessage = document.getElementById('emptyMessage');
+
+        const restorableElements = [];
+
+        monthSections.forEach(section => {
+            const title = section.querySelector('.month-title');
+            if (title) {
+                restorableElements.push(title);
+            }
+            section.querySelectorAll('.entry').forEach(entry => {
+                restorableElements.push(entry);
+            });
+        });
+
+        restorableElements.forEach(element => {
+            element.dataset.originalHtml = element.innerHTML;
+        });
+
+        function escapeRegExp(keyword) {
+            return keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function highlightElement(element, keyword) {
+            const originalHtml = element.dataset.originalHtml;
+            if (!keyword) {
+                element.innerHTML = originalHtml;
+                return true;
+            }
+
+            const escaped = escapeRegExp(keyword);
+            const regex = new RegExp(`(${escaped})`, 'gi');
+            const highlightedHtml = originalHtml.replace(regex, '<mark>$1</mark>');
+            element.innerHTML = highlightedHtml;
+            return highlightedHtml !== originalHtml;
+        }
+
+        function filterByKeyword(keyword) {
+            const trimmedKeyword = keyword.trim();
+            const hasKeyword = trimmedKeyword.length > 0;
+            let anyVisible = false;
+
+            monthSections.forEach(section => {
+                const title = section.querySelector('.month-title');
+                const entries = Array.from(section.querySelectorAll('.entry'));
+
+                if (!hasKeyword) {
+                    if (title) {
+                        highlightElement(title, '');
+                    }
+                    entries.forEach(entry => {
+                        highlightElement(entry, '');
+                        entry.classList.remove('hidden');
+                    });
+                    section.classList.remove('hidden');
+                    anyVisible = true;
+                    return;
+                }
+
+                const titleHasMatch = title ? highlightElement(title, trimmedKeyword) : false;
+                let sectionHasMatch = !!titleHasMatch;
+
+                entries.forEach(entry => {
+                    const entryHasMatch = highlightElement(entry, trimmedKeyword);
+                    entry.classList.toggle('hidden', !entryHasMatch);
+                    if (entryHasMatch) {
+                        sectionHasMatch = true;
+                    }
+                });
+
+                section.classList.toggle('hidden', !sectionHasMatch);
+                if (sectionHasMatch) {
+                    anyVisible = true;
+                } else if (title) {
+                    // Reset the title to avoid lingering highlight when the section is hidden
+                    highlightElement(title, '');
+                }
+            });
+
+            emptyMessage.classList.toggle('hidden', anyVisible);
+        }
+
+        keywordInput.addEventListener('input', event => {
+            filterByKeyword(event.target.value);
+        });
+    </script>
+</body>
+</html>
