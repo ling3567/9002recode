@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
         /* 設定 Inter 字體 */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f9ff; /* 淺天空藍 (sky-50) */
+            background-color: #f0f9ff; /* 柔和的天空藍背景 */
         }
         /* 自定義滾動條樣式 */
         .scrollable-content::-webkit-scrollbar {
@@ -27,9 +27,9 @@
         .scrollable-content::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        /* 關鍵字高亮樣式 (保留活潑的黃色) */
+        /* 關鍵字高亮樣式 */
         .highlight {
-            background-color: #fde68a; /* 淺黄色背景 */
+            background-color: #fde68a; /* 淺黃色背景 */
             padding: 2px 4px;
             border-radius: 4px;
             font-weight: bold;
@@ -113,16 +113,16 @@
 
         /* 會議內容排版樣式 */
         .level-1 {
-            margin-left: 2em; /* 讓 "一、" 的文字從 2em 開始 */
-            text-indent: -2em; /* 讓 "一、" 往左凸排 2em (回到 0) */
+            margin-left: 2em;
+            text-indent: -2em;
         }
         .level-2 {
-            margin-left: 0.8em; /* 1. 或 (一) 的文字起始位置 (縮小) */
-            text-indent: -0.8em; /* 讓 "1." 凸排 (縮小) */
+            margin-left: 0.8em;
+            text-indent: -0.8em;
         }
         .level-3 {
-            margin-left: 1.6em; /* (1) 的文字起始位置 (調整) */
-            text-indent: -0.8em; /* 讓 "(1)" 對齊 "1." 的文字 (調整) */
+            margin-left: 2em;
+            text-indent: -1.5em;
         }
     </style>
 </head>
@@ -134,35 +134,29 @@
         新增會議內容
     </a>
 
-    <!-- 主要內容區塊 -->
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8 mt-16 md:mt-4">
         <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">醫學教育委員會會議紀錄查詢</h1>
 
-        <!-- 快速月份導覽 (套用新色系) -->
         <section id="monthQuickNav" class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <!-- 年份導覽標題與切換按鈕 -->
-                <div class="flex items-center justify-between sm:justify-start gap-3">
+            <div class="flex flex-col gap-4">
+                <div class="flex w-full items-center justify-between">
                     <button id="prevYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
                         <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
-                    <!-- 修改此處：讓標題和年份在同一行 -->
-                    <div class="flex items-baseline gap-2">
-                        <p class="text-xs tracking-wider text-blue-600 uppercase">快速月份導覽</p>
-                        <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800">114 年</p>
+                    <!-- 修改此處：標題在上，年份在下 -->
+                    <div class="flex flex-col items-center">
+                        <p class="text-xs tracking-wider text-blue-600 uppercase whitespace-nowrap">快速月份導覽</p>
+                        <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800 whitespace-nowrap">114 年</p>
                     </div>
                     <button id="nextYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
                         <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
                 <!-- 月份按鈕 -->
-                <div id="monthQuickNavButtons" class="grid w-full grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-                    <!-- 月份按鈕將由 JS 動態生成 -->
-                </div>
+                <div id="monthQuickNavButtons" class="grid w-full grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-12"></div>
             </div>
         </section>
 
-        <!-- 搜尋條件區塊 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <input type="text" id="keywordInput" placeholder="輸入關鍵字查詢 (例如: 報告, 臨時動議)"
                    class="col-span-1 md:col-span-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
@@ -179,22 +173,19 @@
                         class="flex-grow px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
                     搜尋會議
                 </button>
-                <!-- "顯示所有" 按鈕改為 藍綠色 (teal) -->
                 <button id="showAllButton"
                         class="flex-grow px-6 py-2 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition duration-150 ease-in-out">
                     顯示所有會議
                 </button>
             </div>
         </div>
-
         <!-- 訊息顯示區塊 -->
         <div id="messageContainer" class="mt-4 p-4 rounded-md hidden">
             <p id="messageText" class="text-center"></p>
         </div>
     </div>
 
-    <!-- 查詢結果容器 (背景改為透明，使用 body 的 sky-50) -->
-    <div id="resultsContainer" class="bg-transparent p-0 md:p-8 rounded-xl w-full max-w-5xl flex-grow scrollable-content overflow-y-auto">
+    <div id="resultsContainer" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 flex-grow scrollable-content overflow-y-auto">
         <p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>
         <!-- 查詢結果將顯示在這裡 -->
     </div>
@@ -245,14 +236,11 @@
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
             const initialMessage = document.getElementById('initialMessage');
-            
-            // 快速導覽相關元素
             const monthQuickNavYearLabel = document.getElementById('monthQuickNavYear');
             const monthQuickNavButtons = document.getElementById('monthQuickNavButtons');
             const prevYearButton = document.getElementById('prevYearButton');
             const nextYearButton = document.getElementById('nextYearButton');
-            // 月份按鈕樣式 (套用新色系)
-            const monthButtonBaseClasses = 'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-center text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+            const monthButtonBaseClasses = 'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-center text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white';
             
             // 登入功能相關元素
             const addMeetingButton = document.getElementById('addMeetingButton');
@@ -268,31 +256,58 @@
             const documentViewerIframe = document.getElementById('documentViewerIframe');
             const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
 
-            // --- 全局變數 ---
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
-            // 會議內容輸入頁面的 URL
+            // 會議內容輸入頁面的 URL (請確保此檔案存在且名稱正確)
             const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
-            // 導覽列當前年份
+
+            // --- 年份導覽邏輯 ---
             let currentNavYear = getDefaultRocYear();
-
-            // --- 初始化 ---
-            updateMonthNav(currentNavYear);
             
-            // 綁定年份切換按鈕事件
+            function getDefaultRocYear() {
+                const now = new Date();
+                const rocYear = now.getFullYear() - 1911;
+                return rocYear > 0 ? rocYear : now.getFullYear(); // 如果民國年小於 0 (例如 1911 年以前)，則使用西元年
+            }
+
+            function updateYearNavButtons() {
+                const now = new Date();
+                const currentAdYear = now.getFullYear();
+                const currentRocYear = currentAdYear - 1911;
+                // 如果目前導覽的年份 >= 今年，則禁用 "往後"
+                nextYearButton.disabled = currentNavYear >= currentRocYear;
+                // 這裡可以設定一個最早年份，例如 110 年
+                prevYearButton.disabled = currentNavYear <= 110; 
+            }
+
+            function updateMonthNav(year, availableMonths = new Set()) {
+                if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
+                
+                const yearToDisplay = year || getDefaultRocYear();
+                currentNavYear = yearToDisplay;
+                monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
+                
+                monthQuickNavButtons.querySelectorAll('button').forEach(button => {
+                    // 始終保持啟用
+                    button.disabled = false;
+                    const yearLabel = button.querySelector('[data-role="year-label"]');
+                    if (yearLabel) {
+                        yearLabel.textContent = `${yearToDisplay} 年`;
+                    }
+                });
+                updateYearNavButtons();
+            }
+
             prevYearButton.addEventListener('click', () => {
-                currentNavYear--;
-                updateMonthNav(currentNavYear);
+                updateMonthNav(currentNavYear - 1);
             });
+
             nextYearButton.addEventListener('click', () => {
-                currentNavYear++;
-                updateMonthNav(currentNavYear);
+                updateMonthNav(currentNavYear + 1);
             });
 
-
-            // --- 輔助函數 ---
-
-            // 顯示訊息
+            // --- 查詢功能相關邏輯 ---
+            // 顯示訊息的輔助函數
             function showMessage(text, type = 'info') {
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
@@ -304,205 +319,126 @@
                     messageContainer.classList.add('bg-blue-100', 'text-blue-800');
                 }
                 messageContainer.classList.remove('hidden');
-                
-                // 3秒後隱藏訊息 (載入中訊息除外)
-                if (type !== 'info') {
-                     setTimeout(() => {
-                        if (messageText.textContent === text) { // 避免覆蓋後來的訊息
-                            messageContainer.classList.add('hidden');
-                        }
-                    }, 3000);
-                }
-            }
-            
-            // 隱藏訊息
-            function hideMessage() {
-                 messageContainer.classList.add('hidden');
+                // 3秒後隱藏訊息
+                setTimeout(() => {
+                    messageContainer.classList.add('hidden');
+                }, 3000);
             }
 
-            // 關鍵字高亮
+            // 關鍵字高亮函數
             function highlightKeyword(text, keyword) {
                 if (!keyword || !text) return text;
-                try {
-                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapedKeyword, 'gi');
-                    return text.replace(regex, match => `<span class="highlight">${match}</span>`);
-                } catch (e) {
-                    console.error("Error highlighting keyword:", e);
-                    return text;
-                }
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedKeyword, 'gi');
+                return text.replace(regex, match => `<span class="highlight">${match}</span>`);
             }
 
-            // 取得預設民國年
-            function getDefaultRocYear() {
-                const now = new Date();
-                const rocYear = now.getFullYear() - 1911;
-                return rocYear > 0 ? rocYear : now.getFullYear(); //  fallback for non-ROC years
-            }
-            
-            // 西元年轉民國年
-            function toRocYear(date) {
-                if (!(date instanceof Date) || isNaN(date.getTime())) return null;
-                const rocYear = date.getFullYear() - 1911;
-                return rocYear > 0 ? rocYear : null;
-            }
-            
-            // 民國年轉西元年 (用於計算日期範圍)
-            function rocYearToGregorian(rocYear, month, day) {
-                if (!rocYear || !month || !day) return null;
-                try {
-                    const gregorianYear = parseInt(rocYear, 10) + 1911;
-                    return new Date(gregorianYear, month - 1, day);
-                } catch(e) {
-                    return null;
-                }
-            }
-
-            // 創建月份快速導覽按鈕
             function createMonthButtons(year) {
                 if (!monthQuickNavButtons) return;
-                monthQuickNavButtons.innerHTML = ''; // 清空現有按鈕
-                // 顯示 12 個月 (從 1 月到 12 月)
-                const months = Array.from({ length: 12 }, (_, index) => index + 1); // 產生 [1, 2, ..., 12]
-                
+                monthQuickNavButtons.innerHTML = '';
+                const months = Array.from({ length: 12 }, (_, index) => index + 1); // 1 到 12 月
+
                 months.forEach(month => {
                     const button = document.createElement('button');
                     button.type = 'button';
-                    const monthString = String(month).padStart(2, '0');
-                    button.dataset.month = monthString;
-                    button.dataset.year = year;
+                    button.dataset.month = String(month).padStart(2, '0');
                     button.className = monthButtonBaseClasses;
                     button.innerHTML = `
                         <span class="block text-xs text-blue-600 whitespace-nowrap" data-role="year-label">${year} 年</span>
                         <span class="block text-sm font-semibold text-blue-800 whitespace-nowrap">${month} 月</span>
                     `;
                     
-                    // 點擊月份按鈕，直接觸發該月份的搜尋
-                    button.addEventListener('click', () => {
-                        const targetYear = button.dataset.year;
-                        const targetMonth = button.dataset.month;
-                        
-                        // 計算該月的第一天與最後一天
-                        const startDate = rocYearToGregorian(targetYear, targetMonth, 1);
-                        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // 該月最後一天
-
-                        if (startDate && endDate) {
-                            // 填入日期並清除關鍵字
-                            startDateInput.value = formatDate(startDate);
-                            endDateInput.value = formatDate(endDate);
-                            keywordInput.value = '';
-                            
-                            // 執行搜尋
-                            performSearch('', startDateInput.value, endDateInput.value);
-                        }
-                    });
+                    button.addEventListener('click', handleMonthClick);
                     monthQuickNavButtons.appendChild(button);
                 });
             }
 
-            // 更新月份導覽列 (標題、按鈕、狀態)
-            function updateMonthNav(year) {
-                if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
-                
-                currentNavYear = year; // 更新當前年份
-                monthQuickNavYearLabel.textContent = `${year} 年`;
-                
-                // 重建月份按鈕以反映新年份
-                createMonthButtons(year);
-                
-                // 更新年份切換按鈕的禁用狀態
-                const currentGregorianYear = new Date().getFullYear();
-                const currentRocYear = currentGregorianYear - 1911;
-                
-                // 如果當前導覽年份 >= 系統民國年，則禁用 "往後"
-                nextYearButton.disabled = (currentNavYear >= currentRocYear);
-                
-                // (可選) 設置一個最早年份限制，例如 110 年
-                prevYearButton.disabled = (currentNavYear <= 110); 
+            function handleMonthClick(event) {
+                const button = event.currentTarget;
+                const month = button.dataset.month;
+                const year = currentNavYear;
+                const rocYear = year; // 假設 currentNavYear 是民國年
+                const adYear = rocYear + 1911;
+
+                const startDate = `${adYear}-${month}-01`;
+                const endDate = new Date(adYear, month, 0); // Get last day of month
+                const formattedEndDate = `${adYear}-${month}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+                startDateInput.value = startDate;
+                endDateInput.value = formattedEndDate;
+                keywordInput.value = '';
+
+                // 執行查詢
+                performSearch('', startDate, formattedEndDate, false);
             }
 
-            // 解析會議日期字串 (增加相容性)
+            function toRocYear(date) {
+                if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+                const rocYear = date.getFullYear() - 1911;
+                return rocYear > 0 ? rocYear : null;
+            }
+
             function parseMeetingDate(rawDate) {
                 if (!rawDate) return null;
                 if (rawDate instanceof Date) {
                     return isNaN(rawDate.getTime()) ? null : rawDate;
                 }
 
-                try {
-                    // 嘗試標準 ISO 日期 (YYYY-MM-DDTHH:MM:SS.sssZ)
-                    let date = new Date(rawDate);
-                    if (!isNaN(date.getTime())) return date;
+                const normalized = rawDate
+                    .toString()
+                    .trim()
+                    .replace(/[年月]/g, '/')
+                    .replace(/日/g, '')
+                    .replace(/-/g, '/')
+                    .replace(/\./g, '/');
 
-                    // 嘗試 "YYYY/MM/DD" 或 "YYYY-MM-DD"
-                    const normalized = rawDate
-                        .toString()
-                        .trim()
-                        .replace(/[年月]/g, '/')
-                        .replace(/日/g, '')
-                        .replace(/-/g, '/')
-                        .replace(/\./g, '/');
+                const parts = normalized.split(/[\/]/).filter(Boolean);
+                if (parts.length >= 3) {
+                    let year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10);
+                    const day = parseInt(parts[2], 10);
 
-                    const parts = normalized.split(/[\/]/).filter(Boolean);
-                    if (parts.length >= 3) {
-                        let year = parseInt(parts[0], 10);
-                        const month = parseInt(parts[1], 10);
-                        const day = parseInt(parts[2], 10);
-
-                        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                            if (year < 1911) { // 處理民國年
-                                year += 1911;
-                            }
-                            date = new Date(year, month - 1, day);
-                            if (!isNaN(date.getTime())) {
-                                return date;
-                            }
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                        if (year < 1911) {
+                            year += 1911;
+                        }
+                        const parsedDate = new Date(year, month - 1, day);
+                        if (!isNaN(parsedDate.getTime())) {
+                            return parsedDate;
                         }
                     }
-                } catch(e) {
-                    console.error("Error parsing date:", rawDate, e);
-                    return null;
                 }
-                return null; // 最終回退
+
+                const fallbackDate = new Date(rawDate);
+                return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
             }
 
             // 格式化日期為 YYYY-MM-DD
-            function formatDate(date) {
-                if (!date) return '無';
-                let d;
-                if (date instanceof Date) {
-                    d = date;
-                } else {
-                    d = parseMeetingDate(date);
+            function formatDate(dateString) {
+                if (!dateString) return '無';
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) {
+                        return dateString;
+                    }
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                } catch (e) {
+                    console.error("Error formatting date:", e);
+                    return dateString;
                 }
-                
-                if (!d || isNaN(d.getTime())) {
-                    return (typeof date === 'string') ? date : '日期格式錯誤';
-                }
-                
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
             }
 
             // 格式化時間為 HH:MM
             function formatTime(timeString) {
                 if (!timeString) return '無';
                 try {
-                    // 如果 timeString 是 Date 物件 (來自 Google Sheet)
-                    if (timeString instanceof Date) {
-                        const hours = String(timeString.getHours()).padStart(2, '0');
-                        const minutes = String(timeString.getMinutes()).padStart(2, '0');
-                        return `${hours}:${minutes}`;
-                    }
-                    
-                    // 如果是 "HH:MM:SS" 格式的字串
-                    const timeMatch = String(timeString).match(/(\d{1,2}:\d{2})/);
+                    const timeMatch = timeString.match(/(\d{1,2}:\d{2})/);
                     if (timeMatch && timeMatch[1]) {
                         return timeMatch[1];
                     }
-                    
-                    // 嘗試解析為日期物件 (適用於 ISO 時間字串)
                     const date = new Date(`2000-01-01T${timeString}`);
                     if (!isNaN(date.getTime())) {
                         const hours = String(date.getHours()).padStart(2, '0');
@@ -511,8 +447,8 @@
                     }
                     return timeString;
                 } catch (e) {
-                    console.error("Error formatting time:", timeString, e);
-                    return String(timeString);
+                    console.error("Error formatting time:", e);
+                    return timeString;
                 }
             }
 
@@ -531,86 +467,78 @@
                     const minutes = String(date.getMinutes()).padStart(2, '0');
                     return `${year}-${month}-${day} ${hours}:${minutes}`;
                 } catch (e) {
-                    console.error("Error formatting creation time:", dateTimeString, e);
+                    console.error("Error formatting creation time:", e);
                     return dateTimeString;
                 }
             }
             
-            // 根據行首字元判斷層級並套用對應樣式 (用於會議內容)
+            // 格式化並合併連續行
             function formatLines(text, keyword) {
                 if (!text) return '';
-                const lines = text.split('\n');
-                let html = '';
-                let currentParagraph = ''; // 用來暫存當前段落的 HTML
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const formattedLines = [];
+                let currentLine = '';
 
-                const getLevelClass = (line) => {
+                lines.forEach((line, index) => {
                     const trimmed = line.trim();
-                    if (/^[一二三四五六七八九十]+、/.test(trimmed)) return 'level-1'; // 一、
-                    if (/^\d+\./.test(trimmed) || /^\([\u4e00-\u9fa5]+\)/.test(trimmed)) return 'level-2'; // 1. or (一)
-                    if (/^[\(（]\d+[\)）]/.test(trimmed)) return 'level-3'; // (1) or （1）
-                    return ''; // 沒有層級
-                };
+                    let levelClass = '';
+                    let isNewBullet = false;
 
-                for (const line of lines) {
-                    if (line.trim() === '') {
-                        // 如果是空行
-                        // 1. 關閉
-                        if (currentParagraph) {
-                            html += currentParagraph + '</p>';
-                            currentParagraph = '';
-                        }
-                        html += '<p>&nbsp;</p>'; // 加上一個空段落
-                        continue;
+                    if (/^[一二三四五六七八九十]+、/.test(trimmed)) {
+                        levelClass = 'level-1';
+                        isNewBullet = true;
+                    } else if (/^\d+\./.test(trimmed)) {
+                        levelClass = 'level-2';
+                        isNewBullet = true;
+                    } else if (/^\(\d+\)/.test(trimmed)) {
+                        levelClass = 'level-3';
+                        isNewBullet = true;
                     }
 
-                    const levelClass = getLevelClass(line);
-
-                    if (levelClass) {
-                        // 這是一個新的點項 (例如 "1." 或 "(1)")
-                        // 1. 關閉
-                        if (currentParagraph) {
-                            html += currentParagraph + '</p>';
+                    if (isNewBullet) {
+                        // 如果是新的點項，推送舊的段落 (如果有的話)
+                        if (currentLine) {
+                            formattedLines.push(currentLine);
                         }
-                        // 2. 開始一個新段落
-                        currentParagraph = `<p class="${levelClass}">${highlightKeyword(line, keyword)}`;
+                        // 開始新的段落
+                        const classAttr = levelClass ? ` class="${levelClass}"` : '';
+                        currentLine = `<p${classAttr}>${highlightKeyword(line, keyword)}`;
                     } else {
-                        // 這是一行接續的文字
-                        if (currentParagraph) {
-                            // 如果我們正在一個段落中，用 <br> 附加
-                            currentParagraph += `<br>${highlightKeyword(line, keyword)}`;
+                        // 如果不是新的點項，附加到當前段落
+                        // 確保 currentLine 不是空的 (例如第一行就是接續文字)
+                        if (currentLine) {
+                            currentLine += `<br>${highlightKeyword(line, keyword)}`;
                         } else {
-                            // 如果這行沒有層級，也不是接續的 (例如: 區塊開頭的純文字)
-                            if (currentParagraph) {
-                                html += currentParagraph + '</p>';
-                                currentParagraph = '';
-                            }
-                            html += `<p>${highlightKeyword(line, keyword)}</p>`;
+                            // 如果是第一行且沒有點項，當作一般文字
+                            currentLine = `<p>${highlightKeyword(line, keyword)}`;
                         }
                     }
+                });
+
+                // 推送最後一個段落
+                if (currentLine) {
+                    currentLine += '</p>'; // 封閉最後一個 p 標籤
+                    formattedLines.push(currentLine);
                 }
 
-                // 關閉
-                if (currentParagraph) {
-                    html += currentParagraph + '</p>';
-                }
-
-                return html;
+                return formattedLines.join('');
             }
+
 
             // 檢查會議紀錄或其內容是否包含關鍵字
             function containsKeyword(data, keyword) {
-                if (!keyword) return true; // 如果沒有關鍵字，視為包含
+                if (!keyword) return true;
                 const lowerKeyword = keyword.toLowerCase();
 
                 // 檢查基本欄位
-                const basicFields = ['會議名稱', '會議地點', '主席', '會議日期', '開始時間', '結束時間'];
+                const basicFields = ['會議名稱', '會議日期', '開始時間', '結束時間', '會議地點', '主席', '建立時間'];
                 for (const field of basicFields) {
-                    if (data[field] && String(data[field]).toLowerCase().includes(lowerKeyword)) {
+                    if (data[field] && typeof data[field] === 'string' && data[field].toLowerCase().includes(lowerKeyword)) {
                         return true;
                     }
                 }
 
-                // 檢查會議內容區塊
+                // 檢查主要內容區塊
                 const meetingSectionsFields = [
                     '壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項',
                     '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱'
@@ -623,44 +551,36 @@
                 return false;
             }
 
-
-            // --- 核心功能：執行查詢 ---
+            // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
-                const isKeywordSearch = keyword.trim() !== '';
-                const lowerKeyword = keyword.toLowerCase();
-                
+                let lowerKeyword = keyword.toLowerCase();
+
                 initialMessage.classList.add('hidden');
-                resultsContainer.innerHTML = ''; // 清空舊結果
+                resultsContainer.innerHTML = '';
                 showMessage('正在查詢會議內容，請稍候...', 'info');
 
                 try {
                     let url = `${APPS_SCRIPT_WEB_APP_URL}?`;
                     const params = [];
-                    // 注意：為簡化後端負擔，我們不在 URL 參數中傳遞關鍵字
-                    // 後端一律返回日期範圍內 (或最新) 的所有資料，由前端篩選
+                    // 後端目前不支援關鍵字，先在前端做
+                    // if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
                     if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
                     if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
-                    if (showLatest && !startDate && !endDate) {
-                         params.push(`showLatest=true`); // 僅在沒有日期時才使用 showLatest
-                    }
+                    if (showLatest) params.push(`showLatest=${showLatest}`);
                     url += params.join('&');
 
                     const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`伺服器錯誤: ${response.statusText}`);
-                    }
                     const result = await response.json();
 
                     if (result.success) {
-                        hideMessage(); // 隱藏 "載入中"
                         if (result.data && result.data.length > 0) {
                             resultsContainer.innerHTML = '';
-                            
-                            // 排序：日期越新越前面
                             const sortedData = [...result.data].sort((a, b) => {
                                 const dateA = parseMeetingDate(a['會議日期']);
                                 const dateB = parseMeetingDate(b['會議日期']);
-                                if (dateA && dateB) return dateB - dateA; // B - A = 降序
+                                if (dateA && dateB) {
+                                    return dateB - dateA; // 日期降序
+                                }
                                 if (dateA) return -1;
                                 if (dateB) return 1;
                                 return 0;
@@ -669,17 +589,16 @@
                             let displayedMeetingsCount = 0;
                             let highestRocYear = null;
                             const monthsByYear = new Map();
-                            const meetingCards = []; // 暫存卡片 DOM
+                            const meetingCards = [];
 
                             sortedData.forEach(meeting => {
-                                // 步驟 1: 檢查此會議是否應顯示 (關鍵字篩選)
-                                if (isKeywordSearch && !containsKeyword(meeting, keyword)) {
-                                    return; // 如果是關鍵字搜尋，且此會議"完全不"包含關鍵字，則跳過
+                                // 判斷是否需要顯示該會議卡片
+                                // 只有在有關鍵字時，才需要篩選
+                                if (keyword && !containsKeyword(meeting, keyword)) {
+                                    return; // 如果有關鍵字，且此會議不包含關鍵字，則跳過
                                 }
-                                
+
                                 displayedMeetingsCount++;
-                                
-                                // (更新導覽列用) 記錄此會議的年份和月份
                                 const meetingDate = parseMeetingDate(meeting['會議日期']);
                                 const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
                                 const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
@@ -692,26 +611,26 @@
                                         monthsByYear.get(meetingRocYear).add(meetingMonth);
                                     }
                                     if (highestRocYear === null || meetingRocYear > highestRocYear) {
-                                        highestRocYear = meetingRocYear; // 記錄搜尋結果中最新的年份
+                                        highestRocYear = meetingRocYear;
                                     }
                                 }
-                                
-                                // 步驟 2: 建立會議卡片基本資訊 (卡片套用新色系)
+
                                 const meetingCard = document.createElement('div');
                                 meetingCard.className = 'bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-100 mb-4';
 
+                                // 1. 會議基本資訊
                                 let cardHtml = `
                                     <div class="flex justify-between items-center mb-2">
-                                        <h3 class="text-xl font-semibold text-gray-900">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
+                                        <h3 class="text-xl font-semibold text-blue-800">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
                                         <button class="edit-button px-4 py-2 bg-gray-300 text-gray-800 font-medium rounded-lg shadow-sm hover:bg-gray-400 transition-colors duration-150 ease-in-out" data-row-index="${meeting.rowIndex}">編輯</button>
                                     </div>
-                                    <p class="text-gray-700 mb-1"><strong>日期:</strong> ${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
-                                    <p class="text-gray-700 mb-1"><strong>時間:</strong> ${highlightKeyword(formatTime(meeting['開始時間']), keyword)} - ${highlightKeyword(formatTime(meeting['結束時間']), keyword)}</p>
-                                    <p class="text-gray-700 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
-                                    <p class="text-gray-700 mb-1"><strong>主席:</strong> ${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>日期:</strong> ${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>時間:</strong> ${highlightKeyword(formatTime(meeting['開始時間']), keyword)} - ${highlightKeyword(formatTime(meeting['結束時間']), keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>地點:</strong> ${highlightKeyword(meeting['會議地點'] || '無', keyword)}</p>
+                                    <p class="text-gray-600 mb-1"><strong>主席:</strong> ${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
                                 `;
 
-                                // 步驟 3: 處理所有會議內容區塊
+                                // 2. 會議內容區塊
                                 const meetingSections = [
                                     { title: '壹、頒獎表揚', field: '壹、頒獎表揚' },
                                     { title: '貳、主席報告', field: '貳、主席報告' },
@@ -724,220 +643,173 @@
 
                                 meetingSections.forEach(section => {
                                     const content = meeting[section.field] || '';
-                                    if (content.trim() === '') return; // 略過無內容的區塊
+                                    const isSectionRelevant = keyword ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
 
-                                    const lowerContent = content.toLowerCase();
-                                    const isSectionContentRelevant = isKeywordSearch ? lowerContent.includes(lowerKeyword) : false;
+                                    // 如果有關鍵字，且此區塊不相關，則不顯示
+                                    if (keyword && !isSectionRelevant) {
+                                        return;
+                                    }
 
-                                    // 判斷是否需要展開：
-                                    // 1. 是關鍵字搜尋 且 此區塊相關
-                                    // 2. 不是關鍵字搜尋 且 (是日期範圍搜尋 或 顯示全部)
-                                    const shouldExpand = (isKeywordSearch && isSectionContentRelevant) || (!isKeywordSearch && (showLatest || (startDate && endDate)));
-                                    const sectionExpandedClass = shouldExpand ? 'expanded' : '';
-                                    const sectionArrowClass = shouldExpand ? 'expanded' : '';
-
-                                    // --- 特殊處理： "肆、..." 區塊 (因為有子項目) ---
-                                    if (section.field === '肆、本次會議報告及討論事項') {
-                                        let subSectionsHtml = '';
-                                        const subSectionsRegex = /([一二三四五六七八九十\d]+[、．][\s\S]*?(?=\n[一二三四五六七八九十\d]+[、．]|$))/g;
-                                        let match;
-                                        let lastIndex = 0;
-                                        let hasRelevantSubSection = false; // 追蹤是否有相關的子項目
-
-                                        // 處理子項目 "之前" 的內容
-                                        const preContent = content.substring(0, content.search(subSectionsRegex)).trim();
-                                        if (preContent) {
-                                            const isPreContentRelevant = isKeywordSearch ? preContent.toLowerCase().includes(lowerKeyword) : false;
-                                            if (!isKeywordSearch || isPreContentRelevant) {
+                                    // 確保只有有內容的區塊才生成
+                                    if (content.trim() !== '') {
+                                        const shouldExpand = !!keyword; // 有關鍵字時自動展開
+                                        const sectionExpandedClass = shouldExpand ? 'expanded' : '';
+                                        const sectionArrowClass = shouldExpand ? 'expanded' : '';
+                                        const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
+                                        
+                                        // 報告事項 (肆) 特殊處理
+                                        if (section.field === '肆、本次會議報告及討論事項') {
+                                            let subSectionsHtml = '';
+                                            // 嘗試匹配 "一、" "二、" "1." "(1)"
+                                            const subSectionsRegex = /([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))[\s\S]*?(?=\n([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))|$)/g;
+                                            let match;
+                                            
+                                            // 處理開頭的非點項文字
+                                            const preContentMatch = content.match(/^([\s\S]*?)(?=[一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))/);
+                                            const preContent = (preContentMatch && preContentMatch[1]) ? preContentMatch[1].trim() : '';
+                                            
+                                            if (preContent && (!keyword || preContent.toLowerCase().includes(lowerKeyword))) {
                                                 subSectionsHtml += formatLines(preContent, keyword);
-                                                hasRelevantSubSection = true;
                                             }
-                                        }
-                                        subSectionsRegex.lastIndex = 0; // 重置 regex
 
-                                        // 迴圈處理所有子項目
-                                        while ((match = subSectionsRegex.exec(content)) !== null) {
-                                            const fullSubSectionText = match[0].trim();
-                                            const isSubSectionRelevant = isKeywordSearch ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : false;
+                                            // 重置 regex
+                                            subSectionsRegex.lastIndex = 0;
 
-                                            // 只有在 (非關鍵字搜尋) 或 (子項目相關) 時，才顯示此子項目
-                                            if (!isKeywordSearch || isSubSectionRelevant) {
-                                                const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十\d]+[、．][^：]*[：]?)/);
+                                            while ((match = subSectionsRegex.exec(content)) !== null) {
+                                                const fullSubSectionText = match[0].trim();
+                                                const isSubSectionRelevant = keyword ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : true;
+
+                                                // 如果有關鍵字，且此子區塊不相關，則不顯示
+                                                if (keyword && !isSubSectionRelevant) {
+                                                    continue;
+                                                }
+
+                                                const subSectionExpandedClass = !!keyword ? 'expanded' : '';
+                                                const subSectionArrowClass = !!keyword ? 'expanded' : '';
+
+                                                const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))[^：]*[：]?/);
                                                 const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '子項目';
                                                 const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
 
-                                                const subSectionId = `${section.field.replace(/[^a-zA-Z0-9]/g, '')}_${subSectionsRegex.lastIndex}`;
-                                                const formattedSubSectionBody = formatLines(subSectionBody, keyword);
+                                                const subSectionId = `subsection-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}-${subSectionsRegex.lastIndex}`;
                                                 
-                                                // 子區塊的展開邏輯
-                                                const subShouldExpand = (isKeywordSearch && isSubSectionRelevant) || (!isKeywordSearch && (showLatest || (startDate && endDate)));
-                                                const subSectionExpandedClass = subShouldExpand ? 'expanded' : '';
-                                                const subSectionArrowClass = subShouldExpand ? 'expanded' : '';
+                                                const formattedSubSectionBody = formatLines(subSectionBody, keyword);
 
                                                 subSectionsHtml += `
                                                     <div class="mt-2 bg-blue-100 p-3 rounded-md border border-blue-200">
                                                         <div class="flex justify-between items-center cursor-pointer section-header" data-target="${subSectionId}">
-                                                            <h5 class="text-base font-semibold text-teal-600">${highlightKeyword(subSectionTitle, keyword)}</h5>
+                                                            <h5 class="text-base font-semibold text-teal-800">${highlightKeyword(subSectionTitle, keyword)}</h5>
                                                             <svg class="arrow-icon w-4 h-4 text-gray-500 ${subSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                             </svg>
                                                         </div>
-                                                        <div id="${subSectionId}" class="section-content mt-1 text-gray-700 text-sm ${subSectionExpandedClass}">
+                                                        <div id="${subSectionId}" class="section-content mt-1 text-gray-700 ${subSectionExpandedClass}">
                                                             ${formattedSubSectionBody}
                                                         </div>
                                                     </div>
                                                 `;
-                                                hasRelevantSubSection = true; // 標記找到了
                                             }
-                                            lastIndex = subSectionsRegex.lastIndex;
-                                        }
-
-                                        // 處理子項目 "之後" 的剩餘內容
-                                        const remainingContent = content.substring(lastIndex).trim();
-                                        if (remainingContent) {
-                                            const isRemainingContentRelevant = isKeywordSearch ? remainingContent.toLowerCase().includes(lowerKeyword) : false;
-                                            if (!isKeywordSearch || isRemainingContentRelevant) {
-                                                subSectionsHtml += formatLines(remainingContent, keyword);
-                                                hasRelevantSubSection = true;
+                                            
+                                            // 如果沒有子項目匹配，顯示全部內容
+                                            if (subSectionsHtml.trim() === '') {
+                                                subSectionsHtml = formatLines(content, keyword);
                                             }
-                                        }
-
-                                        // 只有在 (非關鍵字搜尋) 或 (有相關子內容) 時，才顯示 "肆、..." 整個區塊
-                                        if (!isKeywordSearch || hasRelevantSubSection) {
-                                            // "肆、" 區塊的展開邏輯
-                                            const mainSectionShouldExpand = (isKeywordSearch && hasRelevantSubSection) || (!isKeywordSearch && (showLatest || (startDate && endDate)));
-                                            const mainSectionExpandedClass = mainSectionShouldExpand ? 'expanded' : '';
-                                            const mainSectionArrowClass = mainSectionShouldExpand ? 'expanded' : '';
 
                                             cardHtml += `
                                                 <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
-                                                        <h4 class="text-lg font-semibold text-teal-700">${section.title}</h4>
-                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${mainSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                    </div>
-                                                    <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${mainSectionExpandedClass}">
-                                                        ${subSectionsHtml}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }
-                                    
-                                    // --- 一般區塊 (非 "肆、...") ---
-                                    } else {
-                                        // 只有在 (非關鍵字搜尋) 或 (此區塊相關) 時，才顯示
-                                        if (!isKeywordSearch || isSectionContentRelevant) {
-                                            const sectionContentHtml = formatLines(content, keyword);
-                                            cardHtml += `
-                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${section.field.replace(/[^a-zA-Z0-9]/g, '')}">
-                                                        <h4 class="text-lg font-semibold text-teal-700">${section.title}</h4>
+                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
+                                                        <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
                                                         <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                         </svg>
                                                     </div>
-                                                    <div id="${section.field.replace(/[^a-zA-Z0-9]/g, '')}" class="section-content mt-2 text-gray-700 text-sm ${sectionExpandedClass}">
+                                                    <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
+                                                        ${subSectionsHtml}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        } else {
+                                            // 其他一般區塊
+                                            const sectionContentHtml = formatLines(content, keyword);
+                                            cardHtml += `
+                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
+                                                        <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
+                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
                                                         ${sectionContentHtml}
                                                     </div>
                                                 </div>
                                             `;
                                         }
                                     }
-                                }); // 結束 meetingSections.forEach
+                                });
 
-                                // 步驟 4: 處理附件區塊 (*** 已修改 ***)
+                                // 3. 附件部分
                                 const attachmentContent = meeting['附件名稱'] || '';
-                                if (attachmentContent.trim() !== '') {
+                                const isAttachmentRelevant = keyword ? attachmentContent.toLowerCase().includes(lowerKeyword) : true;
+
+                                if (attachmentContent.trim() !== '' && isAttachmentRelevant) {
+                                    const attachmentExpandedClass = !!keyword ? 'expanded' : '';
+                                    const attachmentArrowClass = !!keyword ? 'expanded' : '';
+                                    const attachmentSectionId = `attachment-${meeting.rowIndex}`;
                                     
-                                    // --- 附件處理邏輯 ---
-                                    // 1. 將多行文字分割
-                                    const rawLines = attachmentContent.split('\n').filter(line => line.trim() !== '');
-                                    // 2. 準備一個陣列來存放處理過的附件 { description, url }
-                                    const attachments = [];
-                                    const urlRegex = /^(https?:\/\/[^\s]+)$/; // 檢查一行是否 *僅為* URL
-                                    const inlineUrlRegex = /(https?:\/\/[^\s]+)/; // 檢查一行中是否 *包含* URL
-
-                                    for (let i = 0; i < rawLines.length; i++) {
-                                        const line = rawLines[i].trim();
-                                        
-                                        if (urlRegex.test(line)) {
-                                            // --- Case 1: 這一行 *就是* 一個 URL ---
-                                            // 檢查前一行是否為文字 (非 URL)
-                                            if (i > 0 && attachments.length > 0) {
-                                                const lastAttachment = attachments[attachments.length - 1];
-                                                // 如果前一個項目是文字(沒有url)，且還沒被配對過
-                                                if (!lastAttachment.url) {
-                                                    // 將此 URL 配對給前一個項目
-                                                    lastAttachment.url = line;
-                                                    continue; // 繼續下一個迴圈
-                                                }
-                                            }
-                                            // 如果沒有前一個項目，或前一個已配對，則
-                                            // 將此 URL 視為一個獨立附件，並給予預設標題
-                                            attachments.push({ description: '附件查閱', url: line });
-
-                                        } else if (inlineUrlRegex.test(line)) {
-                                            // --- Case 2: 這一行 *包含* URL (例如 "說明: http://...") ---
-                                            const urlMatch = line.match(inlineUrlRegex);
-                                            const url = urlMatch[0];
-                                            const urlIndex = line.indexOf(url);
-                                            let description = line.substring(0, urlIndex).trim().replace(/:$/, '').trim();
-                                            if (!description) description = '附件查閱'; // 如果 URL 前面沒文字
-                                            
-                                            attachments.push({ description: description, url: url });
-
-                                        } else {
-                                            // --- Case 3: 這一行 *不包含* URL (純文字) ---
-                                            // 它可能是一個說明，也可能只是純文字
-                                            attachments.push({ description: line, url: '' });
-                                        }
-                                    }
-                                    // --- 附件處理邏輯結束 ---
-
+                                    const lines = attachmentContent.split('\n').filter(line => line.trim() !== '');
                                     let attachmentLinksHtml = '';
-                                    let hasRelevantAttachment = false;
-
-                                    // 迴圈遍歷處理過的 attachments 陣列
-                                    attachments.forEach((attachment) => {
-                                        const { description, url } = attachment;
-                                        // 如果 description 為空或開頭為 http，使用預設標題
-                                        const displayTitle = (description && !description.toLowerCase().startsWith('http')) ? description : '附件查閱';
+                                    
+                                    for (let i = 0; i < lines.length; i++) {
+                                        const line = lines[i];
+                                        const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
                                         
-                                        // 關鍵字搜尋範圍包含說明與URL
-                                        const fullLineForSearch = description + ' ' + url;
-                                        const isLineRelevant = isKeywordSearch ? fullLineForSearch.toLowerCase().includes(lowerKeyword) : false;
+                                        if (urlMatch) {
+                                            // 如果這一行是 URL
+                                            const url = urlMatch[0];
+                                            let description = '';
+                                            // 檢查上一行是否為描述
+                                            if (i > 0 && !lines[i-1].match(/(https?:\/\/[^\s]+)/)) {
+                                                description = lines[i-1].replace(/：$/, '').trim();
+                                            }
+                                            
+                                            // 如果上一行是描述，我們已經在上一輪處理過了，跳過
+                                            if (i > 0 && lines[i-1].match(/(https?:\/\/[^\s]+)/) === null && lines[i].match(/(https?:\/\/[^\s]+)/)) {
+                                                continue;
+                                            }
 
-                                        // 只有在 (非關鍵字搜尋) 或 (此附件相關) 時，才顯示
-                                        if (!isKeywordSearch || isLineRelevant) {
-                                            if (url) {
-                                                // *** 這是您要的修改：同時顯示按鈕與 <A> 連結 ***
+                                            attachmentLinksHtml += `
+                                                <div class="mt-2 bg-blue-100 p-3 rounded-md border border-blue-200">
+                                                    <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
+                                                        ${highlightKeyword(description || '附件查閱', keyword)}
+                                                    </button>
+                                                    <a href="${url}" target="_blank" class="text-sm text-gray-500 hover:text-blue-600 truncate block mt-1" title="開啟新分頁">${highlightKeyword(url, keyword)}</a>
+                                                </div>
+                                            `;
+                                        } else if (i + 1 < lines.length && lines[i+1].match(/(https?:\/\/[^\s]+)/)) {
+                                            // 如果這一行是描述，且下一行是 URL
+                                            const description = line.replace(/：$/, '').trim();
+                                            const url = lines[i+1].match(/(https?:\/\/[^\s]+)/)[0];
+                                            
+                                            if (!keyword || description.toLowerCase().includes(lowerKeyword) || url.toLowerCase().includes(lowerKeyword)) {
                                                 attachmentLinksHtml += `
                                                     <div class="mt-2 bg-blue-100 p-3 rounded-md border border-blue-200">
                                                         <button type="button" class="text-blue-600 hover:underline font-medium w-full text-left" data-url="${url}" onclick="openDocumentViewer(this.dataset.url)">
-                                                            ${highlightKeyword(displayTitle, keyword)}
+                                                            ${highlightKeyword(description || '附件查閱', keyword)}
                                                         </button>
-                                                        <a href="${url}" target="_blank" class="mt-1 block text-xs text-gray-500 hover:text-gray-700 break-all" rel="noopener noreferrer">
-                                                            ${highlightKeyword(url, keyword)}
-                                                        </a>
+                                                        <a href="${url}" target="_blank" class="text-sm text-gray-500 hover:text-blue-600 truncate block mt-1" title="開啟新分頁">${highlightKeyword(url, keyword)}</a>
                                                     </div>
                                                 `;
-                                                hasRelevantAttachment = true;
-                                            } else {
-                                                // 如果沒有 URL (純文字)，則顯示為 <p> (如您的截圖所示)
-                                                attachmentLinksHtml += `<p class="mt-2 text-gray-700">${highlightKeyword(description, keyword)}</p>`;
-                                                hasRelevantAttachment = true;
+                                            }
+                                        } else {
+                                            // 只是純文字
+                                            if (!keyword || line.toLowerCase().includes(lowerKeyword)) {
+                                                attachmentLinksHtml += `<p class="mt-2 text-gray-600">${highlightKeyword(line, keyword)}</p>`;
                                             }
                                         }
-                                    }); // 結束 attachments.forEach
+                                    }
 
-                                    // 只有在 (有內容) 且 (非關鍵字搜尋 或 有相關附件) 時，才顯示附件區塊
-                                    if (attachmentLinksHtml && (!isKeywordSearch || hasRelevantAttachment)) {
-                                        const attachmentShouldExpand = (isKeywordSearch && hasRelevantAttachment) || (!isKeywordSearch && (showLatest || (startDate && endDate)));
-                                        const attachmentExpandedClass = attachmentShouldExpand ? 'expanded' : '';
-                                        const attachmentArrowClass = attachmentShouldExpand ? 'expanded' : '';
-                                        const attachmentSectionId = `附件_${meeting.rowIndex}`; // 確保ID唯一
-
+                                    if (attachmentLinksHtml) {
                                         cardHtml += `
                                             <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentSectionId}">
@@ -946,32 +818,32 @@
                                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                     </svg>
                                                 </div>
-                                                <div id="${attachmentSectionId}" class="section-content mt-2 text-gray-700 text-sm ${attachmentExpandedClass}">
+                                                <div id="${attachmentSectionId}" class="section-content mt-2 text-gray-700 ${attachmentExpandedClass}">
                                                     ${attachmentLinksHtml}
                                                 </div>
                                             </div>
                                         `;
                                     }
-                                } // 結束 步驟 4
+                                }
 
-                                // 步驟 5: 加上卡片結尾 (建立時間)
                                 cardHtml += `
                                     <p class="text-gray-500 text-sm mt-4"><strong>建立時間:</strong> ${highlightKeyword(formatCreationTime(meeting['建立時間']), keyword)}</p>
                                 `;
-                                
+
                                 meetingCard.innerHTML = cardHtml;
                                 meetingCards.push({
                                     element: meetingCard,
                                     month: meetingMonth,
                                     rocYear: meetingRocYear
                                 });
-                            }); // 結束 sortedData.forEach
+                            });
 
-                            // 步驟 6: 處理月份錨點並將卡片附加到 DOM
                             const targetYear = highestRocYear !== null ? highestRocYear : currentNavYear;
+                            const availableMonths = monthsByYear.get(targetYear) || new Set();
                             const monthAnchors = new Set();
-                            
+
                             meetingCards.forEach(({ element, month, rocYear }) => {
+                                // 僅為目標年份的會議添加錨點
                                 if (rocYear === targetYear && month && !monthAnchors.has(month)) {
                                     const anchor = document.createElement('div');
                                     anchor.id = `month-${month}`;
@@ -982,12 +854,18 @@
                                 resultsContainer.appendChild(element);
                             });
 
-                            // 步驟 7: 綁定卡片內的展開/收合事件
+                            // 更新導覽列
+                            if (displayedMeetingsCount > 0) {
+                                updateMonthNav(targetYear, availableMonths);
+                            } else {
+                                updateMonthNav(targetYear, new Set()); // 保持年份但清空月份
+                            }
+
+                            // 綁定卡片展開/收合事件
                             resultsContainer.querySelectorAll('.section-header').forEach(header => {
                                 header.addEventListener('click', (event) => {
-                                    // 防止點擊按鈕時觸發
-                                    if (event.target.tagName === 'BUTTON' || event.target.closest('button')) {
-                                        return;
+                                    if (event.target.tagName === 'BUTTON' || event.target.tagName === 'A') {
+                                        return; // 點擊按鈕或連結時不觸發收合
                                     }
                                     const targetId = header.dataset.target;
                                     const contentDiv = document.getElementById(targetId);
@@ -1000,56 +878,75 @@
                                 });
                             });
 
-                            // 步驟 8: 顯示最終結果訊息
-                            if (displayedMeetingsCount > 0) {
+                            // 處理沒有結果的情況 (篩選後為 0)
+                            if (displayedMeetingsCount === 0) {
+                                resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
+                                showMessage('沒有找到符合條件的會議紀錄。', 'info');
+                            } else {
                                 showMessage(`找到 ${displayedMeetingsCount} 條結果。`, 'success');
+                            }
+
+                        } else {
+                            // ** 修正後的邏輯： result.data.length === 0 **
+                            const noMeetingMonths = {
+                                '114': ['02', '08', '11'] // 114年的2月和8月和11月
+                                // 您可以在此處添加更多年份和月份
+                            };
+                            const currentYearStr = String(currentNavYear);
+                            // 從 startDate (YYYY-MM-DD) 取出月份
+                            const searchMonth = startDate.substring(5, 7); 
+
+                            let noMeeting = false;
+                            // 檢查是否為特定未開會月份 (僅在無關鍵字且有日期範圍時)
+                            if (startDate && endDate && !keyword && 
+                                noMeetingMonths[currentYearStr] && 
+                                noMeetingMonths[currentYearStr].includes(searchMonth)) {
+                                noMeeting = true;
+                            }
+
+                            if (noMeeting) {
+                                const displayMonth = parseInt(searchMonth, 10); // 轉成 "2" 而非 "02"
+                                resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`;
+                                showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info');
                             } else {
                                 resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
                                 showMessage('沒有找到符合條件的會議紀錄。', 'info');
                             }
-
-                        } else { // result.data 為空
-                            resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
-                            showMessage('沒有找到符合條件的會議紀錄。', 'info');
+                            updateMonthNav(currentNavYear, new Set());
                         }
-                    } else { // result.success 為 false
-                        throw new Error(result.message || '查詢失敗');
+                    } else {
+                        resultsContainer.innerHTML = `<p class="text-red-500 text-center">查詢失敗: ${result.message}</p>`;
+                        showMessage(`查詢失敗: ${result.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('查詢過程中發生錯誤:', error);
-                    resultsContainer.innerHTML = `<p class="text-red-500 text-center">查詢失敗: ${error.message}。請檢查網路連線或聯繫管理員。</p>`;
-                    showMessage(`查詢失敗: ${error.message}`, 'error');
+                    resultsContainer.innerHTML = '<p class="text-red-500 text-center">網路錯誤或 Apps Script 發生問題。請檢查控制台。</p>';
+                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
                 }
             }
 
-
             // --- 事件綁定 ---
-
-            // 搜尋按鈕
             searchButton.addEventListener('click', () => {
                 const keyword = keywordInput.value.trim();
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
-                performSearch(keyword, startDate, endDate, false); // false: 不是 "顯示所有"
+                performSearch(keyword, startDate, endDate);
             });
 
-            // 顯示所有會議按鈕
             showAllButton.addEventListener('click', () => {
                 keywordInput.value = '';
                 startDateInput.value = '';
                 endDateInput.value = '';
-                updateMonthNav(getDefaultRocYear()); // 重置導覽列到當年
-                performSearch('', '', '', true); // true: 是 "顯示所有"
+                performSearch('', '', '', true); // true = showLatest
             });
 
-            // Enter 鍵觸發搜尋
             keywordInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     searchButton.click();
                 }
             });
 
-            // "新增會議內容" 按鈕
+            // --- 登入功能 ---
             addMeetingButton.addEventListener('click', () => {
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
@@ -1061,7 +958,7 @@
                 loginButton.dataset.targetUrl = MEETING_INPUT_PAGE_URL;
             });
 
-            // "編輯" 按鈕 (使用事件委派)
+            // 使用事件委派綁定 "編輯" 按鈕
             document.addEventListener('click', (event) => {
                 if (event.target.classList.contains('edit-button')) {
                     const rowIndex = event.target.dataset.rowIndex;
@@ -1076,39 +973,35 @@
                 }
             });
 
-            // --- 登入視窗邏輯 ---
-            
-            // 點擊背景關閉
+            // 登入視窗
             loginModal.addEventListener('click', (event) => {
-                if (event.target === loginModal) {
+                if (event.target === loginModal) { // 點擊背景
                     loginModal.classList.add('hidden');
                     loginModal.classList.remove('flex');
                 }
             });
-            // 取消按鈕
             cancelLoginButton.addEventListener('click', () => {
                 loginModal.classList.add('hidden');
                 loginModal.classList.remove('flex');
             });
-            // 登入按鈕
+
             loginButton.addEventListener('click', () => {
                 const username = usernameInput.value;
                 const password = passwordInput.value;
 
-                // 簡易的帳號密碼驗證
+                // 簡單的密碼驗證
                 if (username === 'cmh9002' && password === 'cmh9002') {
                     loginMessage.classList.add('hidden');
                     loginModal.classList.add('hidden');
                     loginModal.classList.remove('flex');
-                    // 導向目標頁面
                     const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL;
-                    window.location.href = targetUrl;
+                    window.location.href = targetUrl; // 前往目標頁面
                 } else {
                     loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
                     loginMessage.classList.remove('hidden');
                 }
             });
-            // Enter 鍵切換
+            // 登入欄位 Enter 鍵
             usernameInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     passwordInput.focus();
@@ -1120,45 +1013,50 @@
                 }
             });
 
-            // --- 文件預覽視窗邏輯 ---
-            
-            // 全局函數：開啟預覽
+            // --- 文件預覽 ---
+            // 將 openDocumentViewer 函數掛載到 window 對象，以便 HTML 中的 onclick 可以調用
             window.openDocumentViewer = function(url) {
                 let embedUrl = url;
-                // 轉換 Google 文件 URL 為可嵌入的 /embed 或 /preview
+                
+                // 轉換 Google Drive 連結
                 if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) {
                     embedUrl = url.replace(/\/edit|\/view/, '/embed');
                 } else if (url.includes('drive.google.com/file/d/')) {
                     embedUrl = url.replace(/\/view\?usp=sharing/, '/preview');
                 }
+                // (可以添加更多 PDF 或其他服務的轉換規則)
                 
                 documentViewerIframe.src = embedUrl;
                 documentViewerModal.classList.add('flex');
                 documentViewerModal.classList.remove('hidden');
             };
 
-            // 關閉按鈕
             closeDocumentViewerButton.addEventListener('click', () => {
                 documentViewerModal.classList.add('hidden');
                 documentViewerModal.classList.remove('flex');
-                documentViewerIframe.src = ''; // 清空 src
+                documentViewerIframe.src = ''; // 停止載入
             });
+
             // 點擊背景關閉
             documentViewerModal.addEventListener('click', (event) => {
                 if (event.target === documentViewerModal) {
                     documentViewerModal.classList.add('hidden');
                     documentViewerModal.classList.remove('flex');
-                    documentViewerIframe.src = ''; // 清空 src
+                    documentViewerIframe.src = ''; // 停止載入
                 }
             });
-            
-            // --- 頁面載入時自動執行 ---
+
+            // --- 頁面初始化 ---
+            createMonthButtons(currentNavYear);
+            updateMonthNav(currentNavYear, new Set()); // 初始化時不顯示可點擊月份
+                        
+            // 檢查 URL 參數，如果沒有參數，則預設載入 "顯示所有會議" (最新的)
             const urlParams = new URLSearchParams(window.location.search);
             if (!urlParams.get('keyword') && !urlParams.get('startDate') && !urlParams.get('endDate')) {
-                // 如果 URL 沒有帶參數，自動執行 "顯示所有會議" (最新)
-                performSearch('', '', '', true);
+                performSearch('', '', '', true); // true = showLatest
             }
         });
     </script>
+
 </body>
 </html>
