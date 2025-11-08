@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -498,6 +498,9 @@
                     if (isNewBullet) {
                         // 如果是新的點項，推送舊的段落 (如果有的話)
                         if (currentLine) {
+                            if (!currentLine.endsWith('</p>')) {
+                                currentLine += '</p>'; // 封閉上一個 p
+                            }
                             formattedLines.push(currentLine);
                         }
                         // 開始新的段落
@@ -517,7 +520,9 @@
 
                 // 推送最後一個段落
                 if (currentLine) {
-                    currentLine += '</p>'; // 封閉最後一個 p 標籤
+                    if (!currentLine.endsWith('</p>')) {
+                         currentLine += '</p>'; // 封閉最後一個 p 標籤
+                    }
                     formattedLines.push(currentLine);
                 }
 
@@ -652,9 +657,9 @@
 
                                     // 確保只有有內容的區塊才生成
                                     if (content.trim() !== '') {
-                                        const shouldExpand = !!keyword; // 有關鍵字時自動展開
-                                        const sectionExpandedClass = shouldExpand ? 'expanded' : '';
-                                        const sectionArrowClass = shouldExpand ? 'expanded' : '';
+                                        // ** 修正：預設展開 **
+                                        const sectionExpandedClass = 'expanded';
+                                        const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
                                         
                                         // 報告事項 (肆) 特殊處理
@@ -684,8 +689,9 @@
                                                     continue;
                                                 }
 
-                                                const subSectionExpandedClass = !!keyword ? 'expanded' : '';
-                                                const subSectionArrowClass = !!keyword ? 'expanded' : '';
+                                                // ** 修正：預設展開 **
+                                                const subSectionExpandedClass = 'expanded';
+                                                const subSectionArrowClass = 'expanded';
 
                                                 const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))[^：]*[：]?/);
                                                 const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '子項目';
@@ -711,7 +717,7 @@
                                             }
                                             
                                             // 如果沒有子項目匹配，顯示全部內容
-                                            if (subSectionsHtml.trim() === '') {
+                                            if (subSectionsHtml.trim() === '' && preContent.trim() === '') {
                                                 subSectionsHtml = formatLines(content, keyword);
                                             }
 
@@ -753,8 +759,9 @@
                                 const isAttachmentRelevant = keyword ? attachmentContent.toLowerCase().includes(lowerKeyword) : true;
 
                                 if (attachmentContent.trim() !== '' && isAttachmentRelevant) {
-                                    const attachmentExpandedClass = !!keyword ? 'expanded' : '';
-                                    const attachmentArrowClass = !!keyword ? 'expanded' : '';
+                                    // ** 修正：預設展開 **
+                                    const attachmentExpandedClass = 'expanded';
+                                    const attachmentArrowClass = 'expanded';
                                     const attachmentSectionId = `attachment-${meeting.rowIndex}`;
                                     
                                     const lines = attachmentContent.split('\n').filter(line => line.trim() !== '');
@@ -789,7 +796,8 @@
                                         } else if (i + 1 < lines.length && lines[i+1].match(/(https?:\/\/[^\s]+)/)) {
                                             // 如果這一行是描述，且下一行是 URL
                                             const description = line.replace(/：$/, '').trim();
-                                            const url = lines[i+1].match(/(https?:\/\/[^\s]+)/)[0];
+                                            // ** 這裡就是錯誤點！**
+                                            const url = lines[i+1].match(/(https?:\/\/[^\s]+)/)[0]; // ** 已修正 **
                                             
                                             if (!keyword || description.toLowerCase().includes(lowerKeyword) || url.toLowerCase().includes(lowerKeyword)) {
                                                 attachmentLinksHtml += `
@@ -864,7 +872,7 @@
                             // 綁定卡片展開/收合事件
                             resultsContainer.querySelectorAll('.section-header').forEach(header => {
                                 header.addEventListener('click', (event) => {
-                                    if (event.target.tagName === 'BUTTON' || event.target.tagName === 'A') {
+                                    if (event.target.tagName === 'BUTTON' || event.target.tagName === 'A' || event.target.closest('A') || event.target.closest('BUTTON')) {
                                         return; // 點擊按鈕或連結時不觸發收合
                                     }
                                     const targetId = header.dataset.target;
@@ -880,8 +888,28 @@
 
                             // 處理沒有結果的情況 (篩選後為 0)
                             if (displayedMeetingsCount === 0) {
-                                resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
-                                showMessage('沒有找到符合條件的會議紀錄。', 'info');
+                                // ** 修正後的邏輯： displayedMeetingsCount === 0 **
+                                const noMeetingMonths = {
+                                    '114': ['02', '08', '11'] // 114年的2月、8月、11月
+                                };
+                                const currentYearStr = String(currentNavYear);
+                                const searchMonth = startDate.substring(5, 7); 
+
+                                let noMeeting = false;
+                                if (startDate && endDate && !keyword && 
+                                    noMeetingMonths[currentYearStr] && 
+                                    noMeetingMonths[currentYearStr].includes(searchMonth)) {
+                                    noMeeting = true;
+                                }
+
+                                if (noMeeting) {
+                                    const displayMonth = parseInt(searchMonth, 10);
+                                    resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`;
+                                    showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info');
+                                } else {
+                                    resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>';
+                                    showMessage('沒有找到符合條件的會議紀錄。', 'info');
+                                }
                             } else {
                                 showMessage(`找到 ${displayedMeetingsCount} 條結果。`, 'success');
                             }
@@ -889,15 +917,12 @@
                         } else {
                             // ** 修正後的邏輯： result.data.length === 0 **
                             const noMeetingMonths = {
-                                '114': ['02', '08', '11'] // 114年的2月和8月和11月
-                                // 您可以在此處添加更多年份和月份
+                                '114': ['02', '08', '11'] // 114年的2月、8月、11月
                             };
                             const currentYearStr = String(currentNavYear);
-                            // 從 startDate (YYYY-MM-DD) 取出月份
                             const searchMonth = startDate.substring(5, 7); 
 
                             let noMeeting = false;
-                            // 檢查是否為特定未開會月份 (僅在無關鍵字且有日期範圍時)
                             if (startDate && endDate && !keyword && 
                                 noMeetingMonths[currentYearStr] && 
                                 noMeetingMonths[currentYearStr].includes(searchMonth)) {
@@ -905,7 +930,7 @@
                             }
 
                             if (noMeeting) {
-                                const displayMonth = parseInt(searchMonth, 10); // 轉成 "2" 而非 "02"
+                                const displayMonth = parseInt(searchMonth, 10);
                                 resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`;
                                 showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info');
                             } else {
@@ -921,7 +946,7 @@
                 } catch (error) {
                     console.error('查詢過程中發生錯誤:', error);
                     resultsContainer.innerHTML = '<p class="text-red-500 text-center">網路錯誤或 Apps Script 發生問題。請檢查控制台。</p>';
-                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
+                    showMessage('網路錯誤或 Apps Script G發生問題。', 'error');
                 }
             }
 
