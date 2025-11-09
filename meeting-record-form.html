@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="zh-TW"><head>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會議內容輸入/編輯</title>
@@ -10,20 +12,22 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6; /* 淺灰色背景 */
         }
-        /* 登入視窗背景 */
-        .modal-overlay {
+        /* 自訂確認視窗樣式 */
+        #deleteConfirmModal {
+            display: none; /* 預設隱藏 */
             background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999; /* 確保在最上層 */
+            z-index: 1000;
         }
-        /* 登入視窗內容 */
-        .modal-content {
-            z-index: 1000; /* 確保在最上層 */
+        #deleteConfirmModal.flex {
+            display: flex; /* 顯示時變為 flex */
         }
     </style>
-</head><body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
         <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
-        
+
         <!-- 檔案解析區域 -->
         <div class="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
             <h2 class="text-lg font-semibold text-gray-800 mb-2">上傳會議紀錄檔案並自動解析</h2>
@@ -35,70 +39,76 @@
                        file:rounded-md file:border-0
                        file:text-sm file:font-semibold
                        file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100">
+                       hover:file:bg-blue-100"
+                       accept=".txt,.docx">
                 <button type="button" id="parseFileButton"
-                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap">
+                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap disabled:opacity-50">
                     解析檔案
                 </button>
             </div>
         </div>
 
-        <form id="meetingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form id="meetingForm">
             <input type="hidden" id="rowIndex" name="rowIndex">
-            
-            <!-- 會議名稱 -->
-            <div>
-                <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
-                <input type="text" id="meetingName" name="會議名稱" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
 
-            <!-- 會議日期 -->
-            <div>
-                <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">會議日期</label>
-                <input type="date" id="meetingDate" name="會議日期" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <!-- 開始時間 -->
-            <div>
-                <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
-                <input type="time" id="startTime" name="開始時間" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <!-- 結束時間 -->
-            <div>
-                <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
-                <input type="time" id="endTime" name="結束時間" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <!-- 會議地點 -->
-            <div>
-                <label for="location" class="block text-sm font-medium text-gray-700 mb-1">會議地點</label>
-                <input type="text" id="location" name="會議地點"
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <!-- 主席 -->
-            <div>
-                <label for="chairman" class="block text-sm font-medium text-gray-700 mb-1">主席</label>
-                <input type="text" id="chairman" name="主席"
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <!-- 勾選框 -->
-            <div class="md:col-span-2 mb-2 p-4 border rounded-md bg-yellow-50 border-yellow-200">
-                <label class="flex items-center">
+            <!-- 狀態：未召開會議 -->
+            <div class="mb-4 p-4 border border-yellow-300 rounded-md bg-yellow-50">
+                <div class="flex items-center">
                     <input type="checkbox" id="noMeetingCheckbox" name="狀態" value="未召開"
-                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <span class="ml-3 text-sm font-medium text-yellow-800">勾選此項，標記為「本月未召開會議」 (僅需填寫會議名稱和日期)</span>
-                </label>
+                           class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="noMeetingCheckbox" class="ml-3 block text-lg font-medium text-yellow-800">
+                        勾選此項，標記為「本月未召開會議」
+                    </label>
+                </div>
+                <p class="text-sm text-yellow-600 mt-2 ml-8">勾選後，僅需填寫會議名稱和日期即可提交，其他欄位將被隱藏。</p>
             </div>
 
-            <!-- 會議內容欄位容器 -->
-            <div id="contentFieldsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 會議名稱 -->
+                <div>
+                    <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
+                    <input type="text" id="meetingName" name="會議名稱" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 會議日期 -->
+                <div>
+                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">會議日期</label>
+                    <input type="date" id="meetingDate" name="會議日期" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+
+            <!-- 可隱藏的內容欄位 -->
+            <div id="contentFields" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <!-- 開始時間 -->
+                <div>
+                    <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+                    <input type="time" id="startTime" name="開始時間" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 結束時間 -->
+                <div>
+                    <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+                    <input type="time" id="endTime" name="結束時間" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 會議地點 -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">會議地點</label>
+                    <input type="text" id="location" name="會議地點"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 主席 -->
+                <div>
+                    <label for="chairman" class="block text-sm font-medium text-gray-700 mb-1">主席</label>
+                    <input type="text" id="chairman" name="主席"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
                 <!-- 壹、頒獎表揚 -->
                 <div class="md:col-span-2">
                     <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
@@ -154,13 +164,13 @@
                     <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
                 </div>
-            </div> <!-- 結束 contentFieldsContainer -->
+            </div> <!-- 結束 #contentFields -->
 
             <!-- 建立時間 (自動填入) -->
-            <div>
+            <div class="mt-6">
                 <label for="creationTime" class="block text-sm font-medium text-gray-700 mb-1">建立時間</label>
                 <input type="datetime-local" id="creationTime" name="建立時間" readonly
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
+                       class="mt-1 block w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
             </div>
 
             <!-- 提交按鈕 -->
@@ -170,7 +180,6 @@
                     提交會議內容
                 </button>
             </div>
-            
             <div class="md:col-span-2 flex justify-center mt-4">
                 <button type="button" id="deleteButton"
                         class="hidden px-8 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
@@ -185,11 +194,11 @@
         </div>
     </div>
 
-    <!-- 刪除確認視窗 (取代 confirm) -->
-    <div id="deleteConfirmModal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
+    <!-- 自訂刪除確認視窗 -->
+    <div id="deleteConfirmModal" class="fixed inset-0 items-center justify-center p-4 modal-overlay">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm modal-content relative">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">確認刪除</h2>
-            <p class="text-gray-600 text-center mb-6">您確定要永久刪除這筆會議紀錄嗎？此操作無法復原。</p>
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">確定要刪除嗎？</h2>
+            <p class="text-gray-600 text-center mb-6">這個動作無法復原。請確認是否要永久刪除這筆會議紀錄。</p>
             <div class="flex justify-center gap-4">
                 <button id="cancelDeleteButton"
                         class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
@@ -203,170 +212,236 @@
         </div>
     </div>
 
-    <!-- 引入 Mammoth.js 用於 .docx 解析 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // *** 修正錯誤：加入遺失的 showMessage 函式 ***
+        // *** 輔助函數定義 (移到 DOMContentLoaded 外層) ***
+
+        // 顯示訊息的輔助函數
+        function showMessage(text, type = 'info', duration = 3000) {
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
-            function showMessage(text, type = 'info') {
-                if (!messageContainer || !messageText) {
-                    console.error("Message container or text element not found!");
-                    return;
-                }
-                messageText.textContent = text;
-                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
-                if (type === 'success') {
-                    messageContainer.classList.add('bg-green-100', 'text-green-800');
-                } else if (type === 'error') {
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
-                } else { // info or loading
-                    messageContainer.classList.add('bg-blue-100', 'text-blue-800');
-                }
-                messageContainer.classList.remove('hidden');
+            if (!messageContainer || !messageText) return;
 
-                if (type !== 'info') { // 'info' (loading) messages should persist
-                    setTimeout(() => {
-                        messageContainer.classList.add('hidden');
-                    }, 3000);
-                }
+            messageText.textContent = text;
+            messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+
+            if (type === 'success') {
+                messageContainer.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                messageContainer.classList.add('bg-red-100', 'text-red-800');
+            } else { // info or loading
+                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
             }
-            // *** 修正結束 ***
+            messageContainer.classList.remove('hidden');
 
-            // 檢查關鍵元素是否存在
+            if (duration > 0) {
+                setTimeout(() => {
+                    messageContainer.classList.add('hidden');
+                }, duration);
+            }
+        }
+
+        // 載入資料的函數
+        async function loadMeetingData(rowIndex, url) {
+            const formTitle = document.getElementById('formTitle');
+            const deleteButton = document.getElementById('deleteButton');
+            const rowIndexInput = document.getElementById('rowIndex');
+            const creationTimeInput = document.getElementById('creationTime');
+            const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
+            
+            formTitle.textContent = '編輯會議內容';
+            deleteButton.classList.remove('hidden');
+            showMessage('正在載入資料...', 'info', 0); // 顯示載入中，不自動隱藏
+
+            try {
+                const fetchUrl = `${url}?action=getRecord&rowIndex=${rowIndex}`;
+                const response = await fetch(fetchUrl);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const data = result.data;
+                    document.getElementById('meetingName').value = data['會議名稱'] || '';
+                    document.getElementById('meetingDate').value = data['會議日期'] || '';
+                    document.getElementById('startTime').value = data['開始時間'] || '';
+                    document.getElementById('endTime').value = data['結束時間'] || '';
+                    document.getElementById('location').value = data['會議地點'] || '';
+                    document.getElementById('chairman').value = data['主席'] || '';
+                    document.getElementById('awards').value = data['壹、頒獎表揚'] || '';
+                    document.getElementById('chairmanReport').value = data['貳、主席報告'] || '';
+                    document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'] || '';
+                    document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'] || '';
+                    document.getElementById('adHocMotion').value = data['伍、臨時動議'] || '';
+                    document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
+                    document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
+                    document.getElementById('attachmentName').value = data['附件名稱'] || '';
+                    
+                    // 建立時間使用舊資料
+                    creationTimeInput.value = data['建立時間'] || '';
+                    
+                    // 檢查是否為「未召開會議」
+                    if (data['狀態'] === '未召開') {
+                        noMeetingCheckbox.checked = true;
+                        // 手動觸發 change 事件來隱藏欄位
+                        noMeetingCheckbox.dispatchEvent(new Event('change'));
+                    }
+
+                    rowIndexInput.value = rowIndex; // Store the row index
+                    showMessage('資料載入成功！', 'success');
+                } else {
+                    showMessage('載入資料失敗: ' + (result.message || '未知錯誤'), 'error');
+                }
+            } catch (error) {
+                showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
+                console.error('載入資料時發生錯誤:', error);
+            }
+        }
+
+        // 提交表單的函數
+        async function submitForm(event, url) {
+            event.preventDefault();
             const form = document.getElementById('meetingForm');
-            if (!form) {
-                console.error("CRITICAL ERROR: meetingForm not found!");
-                return; // 停止執行以防止後續錯誤
+            const rowIndexInput = document.getElementById('rowIndex');
+            const creationTimeInput = document.getElementById('creationTime');
+            
+            showMessage('正在提交資料中，請稍候...', 'info', 0);
+
+            const formData = new FormData(form);
+            const meetingData = {};
+            for (let [key, value] of formData.entries()) {
+                meetingData[key] = value;
+            }
+            
+            // 如果 "未召開" 沒被勾選，FormData 不會包含它，所以手動補上空值
+            if (!meetingData['狀態']) {
+                meetingData['狀態'] = '';
             }
 
+            const isUpdate = !!rowIndexInput.value;
+            if (isUpdate) {
+                meetingData.action = 'updateRecord';
+                meetingData.rowIndex = rowIndexInput.value;
+                // 在編輯模式下，建立時間保留舊值
+                meetingData['建立時間'] = creationTimeInput.value;
+            } else {
+                meetingData.action = 'addRecord';
+                // 在新增模式下，建立時間使用當下值
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                meetingData['建立時間'] = now.toISOString().slice(0, 16);
+            }
+
+            console.log('準備提交的會議資料:', meetingData);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: new URLSearchParams(meetingData),
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存！', 'success');
+                    
+                    setTimeout(() => {
+                       window.location.href = 'index.html'; // 成功後跳轉回查詢頁面
+                    }, 2000);
+
+                } else {
+                    showMessage('儲存失敗: ' + (result.message || '未知錯誤'), 'error');
+                }
+            } catch (error) {
+                console.error('發送資料到 Apps Script 時發生錯誤:', error);
+                showMessage('網路錯誤或 Apps Script 發生問題。請檢查控制台。', 'error');
+            }
+        }
+
+        // 顯示自訂刪除確認視窗
+        function showDeleteConfirm(callback) {
+            const modal = document.getElementById('deleteConfirmModal');
+            const confirmBtn = document.getElementById('confirmDeleteButton');
+            const cancelBtn = document.getElementById('cancelDeleteButton');
+            
+            modal.classList.add('flex'); // 顯示
+
+            // 移除舊監聽器，避免重複綁定
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            // 綁定新監聽器
+            newConfirmBtn.addEventListener('click', () => {
+                callback(true);
+                hideDeleteConfirm();
+            });
+            newCancelBtn.addEventListener('click', () => {
+                callback(false);
+                hideDeleteConfirm();
+            });
+        }
+
+        // 隱藏自訂刪除確認視窗
+        function hideDeleteConfirm() {
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.classList.remove('flex'); // 隱藏
+        }
+
+
+        // *** DOMContentLoaded ***
+        document.addEventListener('DOMContentLoaded', () => {
+            // *** 元素獲取 ***
+            const form = document.getElementById('meetingForm');
             const creationTimeInput = document.getElementById('creationTime');
             const startTimeInput = document.getElementById('startTime');
-            const endTimeInput = document.getElementById('endTime'); 
+            const endTimeInput = document.getElementById('endTime');
             const formTitle = document.getElementById('formTitle');
             const rowIndexInput = document.getElementById('rowIndex');
             const deleteButton = document.getElementById('deleteButton');
             const fileInput = document.getElementById('fileInput');
             const parseFileButton = document.getElementById('parseFileButton');
-            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
-            const cancelDeleteButton = document.getElementById('cancelDeleteButton');
-            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
             const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
-            const contentFieldsContainer = document.getElementById('contentFieldsContainer');
-
-            // 確保所有關鍵元素都已載入
-            if (!startTimeInput || !endTimeInput || !noMeetingCheckbox || !contentFieldsContainer) {
-                console.error("CRITICAL ERROR: One or more form elements are missing (startTime, endTime, noMeetingCheckbox, contentFieldsContainer).");
-                return;
-            }
-            const allContentInputs = contentFieldsContainer.querySelectorAll('textarea'); // 用於清空內容
-
+            const contentFields = document.getElementById('contentFields');
 
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
-            // 載入資料的函數
-            async function loadMeetingData(rowIndex) {
-                formTitle.textContent = '編輯會議內容';
-                deleteButton.classList.remove('hidden');
-                
-                showMessage('正在載入資料...', 'info');
-
-                try {
-                    const url = `${APPS_SCRIPT_WEB_APP_URL}?action=getRecord&rowIndex=${rowIndex}`;
-                    const response = await fetch(url);
-                    const result = await response.json();
-
-                    if (result.success && result.data) {
-                        const data = result.data;
-                        document.getElementById('meetingName').value = data['會議名稱'] || '';
-                        document.getElementById('meetingDate').value = data['會議日期'] || '';
-                        document.getElementById('startTime').value = data['開始時間'] || '';
-                        document.getElementById('endTime').value = data['結束時間'] || '';
-                        document.getElementById('location').value = data['會議地點'] || '';
-                        document.getElementById('chairman').value = data['主席'] || '';
-                        document.getElementById('awards').value = data['壹、頒獎表揚'] || '';
-                        document.getElementById('chairmanReport').value = data['貳、主席報告'] || '';
-                        document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'] || '';
-                        document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'] || '';
-                        document.getElementById('adHocMotion').value = data['伍、臨時動議'] || '';
-                        document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
-                        document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
-                        document.getElementById('attachmentName').value = data['附件名稱'] || '';
-                        
-                        // 建立時間使用舊資料，而不是當下時間
-                        document.getElementById('creationTime').value = data['建立時間'] || '';
-                        
-                        // 載入時檢查 "未召開" 狀態
-                        if (data['狀態'] === '未召開') {
-                            noMeetingCheckbox.checked = true;
-                            contentFieldsContainer.classList.add('hidden');
-                            startTimeInput.required = false;
-                            endTimeInput.required = false;
-                        }
-
-                        rowIndexInput.value = rowIndex; // Store the row index
-                        messageContainer.classList.add('hidden');
-                    } else {
-                        showMessage('載入資料失敗: ' + (result.message || '未知錯誤'), 'error');
-                    }
-                } catch (error) {
-                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
-                    console.error('載入資料時發生錯誤:', error);
-                }
-            }
-            
-            // 頁面載入時檢查是否為編輯模式
+            // *** 頁面載入邏輯 ***
             const urlParams = new URLSearchParams(window.location.search);
             const editRowIndex = urlParams.get('editRow');
+            
             if (editRowIndex) {
-                loadMeetingData(editRowIndex);
+                // 編輯模式
+                loadMeetingData(editRowIndex, APPS_SCRIPT_WEB_APP_URL);
             } else {
-                // 如果是新增模式，設定預設值
+                // 新增模式，設定預設值
                 formTitle.textContent = '新增會議內容';
                 deleteButton.classList.add('hidden');
                 
+                // 設定預設建立時間
                 const now = new Date();
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                if (creationTimeInput) creationTimeInput.value = now.toISOString().slice(0, 16);
-                if (startTimeInput) startTimeInput.value = '12:30';
-                // 新增預設值
-                const locationInput = document.getElementById('location');
-                const chairmanInput = document.getElementById('chairman');
-                if (locationInput) locationInput.value = '第五醫療大樓五樓552會議室';
-                if (chairmanInput) chairmanInput.value = '陳志成';
+                creationTimeInput.value = now.toISOString().slice(0, 16);
+                
+                // 設定預設值
+                startTimeInput.value = '12:30';
+                document.getElementById('location').value = '第五醫療大樓五樓552會議室';
+                document.getElementById('chairman').value = '陳志成';
             }
 
-            // "未召開會議" 勾選框邏輯
-            noMeetingCheckbox.addEventListener('change', () => {
-                const isChecked = noMeetingCheckbox.checked;
-                if (isChecked) {
-                    // 隱藏內容區塊，並設定時間為 "非必填"
-                    contentFieldsContainer.classList.add('hidden');
-                    startTimeInput.required = false;
-                    endTimeInput.required = false;
-                } else {
-                    // 顯示內容區塊，並設定時間為 "必填"
-                    contentFieldsContainer.classList.remove('hidden');
-                    startTimeInput.required = true;
-                    endTimeInput.required = true;
-                }
-            });
-            
-            // 檔案解析按鈕事件
+            // *** 事件監聽器 ***
+
+            // 檔案解析按鈕
             parseFileButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
-                    showMessage('請選擇一個檔案！', 'error'); // 改用 showMessage
+                    showMessage('請選擇一個檔案！', 'error');
                     return;
                 }
-
-                // 增加載入狀態
+                
                 parseFileButton.disabled = true;
                 parseFileButton.textContent = '解析中...';
-                showMessage('正在解析檔案...', 'info');
+                showMessage('正在解析檔案...', 'info', 0);
 
                 try {
                     let fileContent = '';
@@ -376,29 +451,35 @@
                         // 使用 mammoth.js 讀取 .docx
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => {
-                                mammoth.extractRawText({arrayBuffer: e.target.result})
+                                mammoth.extractRawText({ arrayBuffer: e.target.result })
                                     .then(result => resolve(result.value))
                                     .catch(reject);
                             };
+                            fileReader.onerror = reject;
                             fileReader.readAsArrayBuffer(file);
                         });
                     } else {
                         // 讀取其他文本檔案 (如 .txt)
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => resolve(e.target.result);
-                            fileReader.onerror = (e) => reject(e);
-                            fileReader.readAsText(file); // 移除 'UTF-8' 讓瀏覽器自動偵測
+                            fileReader.onerror = reject;
+                            fileReader.readAsText(file); // 讓瀏覽器自動偵測編碼
                         });
                     }
                     
-                    // 呼叫 Apps Script 進行 AI 解析
+                    // 呼叫 Apps Script 進行 AI 解析 (假設 action 為 'parseFileContent')
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                         method: 'POST',
                         body: new URLSearchParams({
-                            action: 'parseFileContent',
+                            action: 'parseFileContent', // 確保 Apps Script 有這個 action
                             fileContent: fileContent
                         })
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(`伺服器錯誤: ${response.statusText}`);
+                    }
+                    
                     const result = await response.json();
 
                     if (result.success && result.data) {
@@ -417,109 +498,34 @@
                         document.getElementById('nextMeetingFollowUp').value = parsedData['陸、下次會議追蹤事項'] || '';
                         document.getElementById('chairmanConclusion').value = parsedData['柒、主席結論'] || '';
                         document.getElementById('attachmentName').value = parsedData['附件名稱'] || '';
-
+                        
                         showMessage('檔案解析成功，資料已填入表單！', 'success');
                     } else {
-                        showMessage('解析失敗: ' + (result.message || '未知錯誤'), 'error');
-                        console.error('Apps Script 解析失敗:', result.message);
+                        showMessage('解析失敗: ' + (result.message || '無法從檔案中解析到資料'), 'error');
+                        console.error('解析失敗的回應:', result);
                     }
                 } catch (error) {
-                    showMessage('解析檔案時發生錯誤。請檢查檔案格式或 Apps Script。', 'error');
+                    showMessage('解析檔案時發生錯誤。請檢查檔案格式或控制台。', 'error');
                     console.error('檔案解析錯誤:', error);
                 } finally {
-                    // 恢復按鈕狀態
                     parseFileButton.disabled = false;
                     parseFileButton.textContent = '解析檔案';
                 }
             });
 
-
-            // 表單提交事件處理
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-
-                showMessage('正在提交資料中，請稍候...', 'info');
-
-                const formData = new FormData(form);
-                const meetingData = {};
-                for (let [key, value] of formData.entries()) {
-                    meetingData[key] = value;
-                }
-                
-                // 處理 "未召開" 狀態
-                if (noMeetingCheckbox.checked) {
-                    meetingData['狀態'] = '未召開';
-                    // 清空不必要的欄位
-                    allContentInputs.forEach(input => {
-                        meetingData[input.name] = ''; // 將表單資料中的內容清空
-                    });
-                    meetingData['開始時間'] = '';
-                    meetingData['結束時間'] = '';
-                } else {
-                    meetingData['狀態'] = ''; // 確保狀態是空的
-                }
-                
-                const isUpdate = !!rowIndexInput.value;
-                if (isUpdate) {
-                    meetingData.action = 'updateRecord';
-                    meetingData.rowIndex = rowIndexInput.value;
-                    // 在編輯模式下，建立時間保留舊值
-                    meetingData['建立時間'] = creationTimeInput.value;
-                } else {
-                    meetingData.action = 'addRecord';
-                    // 在新增模式下，建立時間使用當下值
-                    const now = new Date();
-                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                    meetingData['建立時間'] = now.toISOString().slice(0, 16); // Re-set creation time on submit for new records
-                }
-                
-                console.log('準備提交的會議資料:', meetingData);
-
-                try {
-                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
-                        method: 'POST',
-                        body: new URLSearchParams(meetingData),
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！', 'success');
-                        
-                        setTimeout(() => {
-                           window.location.href = 'index.html'; // 假設主頁面是 index.html
-                        }, 2000);
-
-                    } else {
-                        showMessage('儲存失敗: ' + (result.message || '未知錯誤'), 'error');
-                    }
-                } catch (error) {
-                    console.error('發送資料到 Apps Script 時發生錯誤:', error);
-                    showMessage('網路錯誤或 Apps Script 發生問題。請檢查控制台。', 'error');
-                }
+            // 表單提交
+            form.addEventListener('submit', (event) => {
+                submitForm(event, APPS_SCRIPT_WEB_APP_URL);
             });
 
-            // 刪除按鈕點擊事件 (使用自訂視窗)
+            // 刪除按鈕
             deleteButton.addEventListener('click', () => {
-                if (deleteConfirmModal) {
-                    deleteConfirmModal.classList.remove('hidden');
-                    deleteConfirmModal.classList.add('flex');
-                }
-            });
+                showDeleteConfirm(async (isConfirmed) => {
+                    if (!isConfirmed) {
+                        return;
+                    }
 
-            if (cancelDeleteButton) {
-                cancelDeleteButton.addEventListener('click', () => {
-                    deleteConfirmModal.classList.add('hidden');
-                    deleteConfirmModal.classList.remove('flex');
-                });
-            }
-
-            if (confirmDeleteButton) {
-                confirmDeleteButton.addEventListener('click', async () => {
-                    deleteConfirmModal.classList.add('hidden');
-                    deleteConfirmModal.classList.remove('flex');
-
-                    showMessage('正在刪除資料中...', 'info');
+                    showMessage('正在刪除資料中...', 'info', 0);
 
                     try {
                         const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
@@ -534,7 +540,7 @@
                         if (result.success) {
                             showMessage('會議紀錄已成功刪除！', 'success');
                             setTimeout(() => {
-                               window.location.href = 'index.html'; // 假設主頁面是 index.html
+                               window.location.href = 'index.html';
                             }, 2000);
                         } else {
                             showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
@@ -544,7 +550,23 @@
                         console.error('刪除資料時發生錯誤:', error);
                     }
                 });
-            }
+            });
+
+            // "未召開會議" 勾選框
+            noMeetingCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    contentFields.classList.add('hidden');
+                    // 設為非必填
+                    startTimeInput.required = false;
+                    endTimeInput.required = false;
+                } else {
+                    contentFields.classList.remove('hidden');
+                    // 恢復必填
+                    startTimeInput.required = true;
+                    endTimeInput.required = true;
+                }
+            });
         });
     </script>
-</body></html>
+</body>
+</html>
