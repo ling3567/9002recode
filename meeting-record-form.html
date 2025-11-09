@@ -37,7 +37,7 @@
                        file:bg-blue-50 file:text-blue-700
                        hover:file:bg-blue-100">
                 <button type="button" id="parseFileButton"
-                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap">
                     解析檔案
                 </button>
             </div>
@@ -45,6 +45,7 @@
 
         <form id="meetingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <input type="hidden" id="rowIndex" name="rowIndex">
+            
             <!-- 會議名稱 -->
             <div>
                 <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
@@ -87,61 +88,73 @@
                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
 
-            <!-- 壹、頒獎表揚 -->
-            <div class="md:col-span-2">
-                <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
-                <textarea id="awards" name="壹、頒獎表揚" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            <!-- 勾選框 -->
+            <div class="md:col-span-2 mb-2 p-4 border rounded-md bg-yellow-50 border-yellow-200">
+                <label class="flex items-center">
+                    <input type="checkbox" id="noMeetingCheckbox" name="狀態" value="未召開"
+                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <span class="ml-3 text-sm font-medium text-yellow-800">勾選此項，標記為「本月未召開會議」 (僅需填寫會議名稱和日期)</span>
+                </label>
             </div>
 
-            <!-- 貳、主席報告 -->
-            <div class="md:col-span-2">
-                <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
-                <textarea id="chairmanReport" name="貳、主席報告" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+            <!-- 會議內容欄位容器 -->
+            <div id="contentFieldsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-2">
+                <!-- 壹、頒獎表揚 -->
+                <div class="md:col-span-2">
+                    <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
+                    <textarea id="awards" name="壹、頒獎表揚" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 參、上次會議追蹤事項 -->
-            <div class="md:col-span-2">
-                <label for="lastMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">參、上次會議追蹤事項</label>
-                <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 貳、主席報告 -->
+                <div class="md:col-span-2">
+                    <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
+                    <textarea id="chairmanReport" name="貳、主席報告" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 肆、本次會議報告及討論事項 -->
-            <div class="md:col-span-2">
-                <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">肆、本次會議報告及討論事項</label>
-                <textarea id="currentMeetingDiscussion" name="肆、本次會議報告及討論事項" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 參、上次會議追蹤事項 -->
+                <div class="md:col-span-2">
+                    <label for="lastMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">參、上次會議追蹤事項</label>
+                    <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 伍、臨時動議 -->
-            <div class="md:col-span-2">
-                <label for="adHocMotion" class="block text-sm font-medium text-gray-700 mb-1">伍、臨時動議</label>
-                <textarea id="adHocMotion" name="伍、臨時動議" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 肆、本次會議報告及討論事項 -->
+                <div class="md:col-span-2">
+                    <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">肆、本次會議報告及討論事項</label>
+                    <textarea id="currentMeetingDiscussion" name="肆、本次會議報告及討論事項" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 陸、下次會議追蹤事項 -->
-            <div class="col-span-2">
-                <label for="nextMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">陸、下次會議追蹤事項</label>
-                <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 伍、臨時動議 -->
+                <div class="md:col-span-2">
+                    <label for="adHocMotion" class="block text-sm font-medium text-gray-700 mb-1">伍、臨時動議</label>
+                    <textarea id="adHocMotion" name="伍、臨時動議" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 柒、主席結論 -->
-            <div class="md:col-span-2">
-                <label for="chairmanConclusion" class="block text-sm font-medium text-gray-700 mb-1">柒、主席結論</label>
-                <textarea id="chairmanConclusion" name="柒、主席結論" rows="3"
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 陸、下次會議追蹤事項 -->
+                <div class="col-span-2">
+                    <label for="nextMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">陸、下次會議追蹤事項</label>
+                    <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
 
-            <!-- 附件名稱 -->
-            <div>
-                <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件</label>
-                <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-            </div>
+                <!-- 柒、主席結論 -->
+                <div class="md:col-span-2">
+                    <label for="chairmanConclusion" class="block text-sm font-medium text-gray-700 mb-1">柒、主席結論</label>
+                    <textarea id="chairmanConclusion" name="柒、主席結論" rows="3"
+                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
+
+                <!-- 附件名稱 -->
+                <div class="md:col-span-2">
+                    <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件</label>
+                    <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
+            </div> <!-- 結束 contentFieldsContainer -->
 
             <!-- 建立時間 (自動填入) -->
             <div>
@@ -195,25 +208,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('meetingForm');
-            const creationTimeInput = document.getElementById('creationTime');
-            const startTimeInput = document.getElementById('startTime');
+            // *** 修正錯誤：加入遺失的 showMessage 函式 ***
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
-            const formTitle = document.getElementById('formTitle');
-            const rowIndexInput = document.getElementById('rowIndex');
-            const deleteButton = document.getElementById('deleteButton');
-            const fileInput = document.getElementById('fileInput');
-            const parseFileButton = document.getElementById('parseFileButton');
-            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
-            const cancelDeleteButton = document.getElementById('cancelDeleteButton');
-            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
-
-            // Apps Script Web 應用程式 URL
-            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
-
-            // *** 修正錯誤：加入遺失的 showMessage 函式 ***
             function showMessage(text, type = 'info') {
+                if (!messageContainer || !messageText) {
+                    console.error("Message container or text element not found!");
+                    return;
+                }
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
                 if (type === 'success') {
@@ -232,6 +234,38 @@
                 }
             }
             // *** 修正結束 ***
+
+            // 檢查關鍵元素是否存在
+            const form = document.getElementById('meetingForm');
+            if (!form) {
+                console.error("CRITICAL ERROR: meetingForm not found!");
+                return; // 停止執行以防止後續錯誤
+            }
+
+            const creationTimeInput = document.getElementById('creationTime');
+            const startTimeInput = document.getElementById('startTime');
+            const endTimeInput = document.getElementById('endTime'); 
+            const formTitle = document.getElementById('formTitle');
+            const rowIndexInput = document.getElementById('rowIndex');
+            const deleteButton = document.getElementById('deleteButton');
+            const fileInput = document.getElementById('fileInput');
+            const parseFileButton = document.getElementById('parseFileButton');
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+            const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
+            const contentFieldsContainer = document.getElementById('contentFieldsContainer');
+
+            // 確保所有關鍵元素都已載入
+            if (!startTimeInput || !endTimeInput || !noMeetingCheckbox || !contentFieldsContainer) {
+                console.error("CRITICAL ERROR: One or more form elements are missing (startTime, endTime, noMeetingCheckbox, contentFieldsContainer).");
+                return;
+            }
+            const allContentInputs = contentFieldsContainer.querySelectorAll('textarea'); // 用於清空內容
+
+
+            // Apps Script Web 應用程式 URL
+            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
             // 載入資料的函數
             async function loadMeetingData(rowIndex) {
@@ -264,6 +298,14 @@
                         
                         // 建立時間使用舊資料，而不是當下時間
                         document.getElementById('creationTime').value = data['建立時間'] || '';
+                        
+                        // 載入時檢查 "未召開" 狀態
+                        if (data['狀態'] === '未召開') {
+                            noMeetingCheckbox.checked = true;
+                            contentFieldsContainer.classList.add('hidden');
+                            startTimeInput.required = false;
+                            endTimeInput.required = false;
+                        }
 
                         rowIndexInput.value = rowIndex; // Store the row index
                         messageContainer.classList.add('hidden');
@@ -288,12 +330,30 @@
                 
                 const now = new Date();
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                creationTimeInput.value = now.toISOString().slice(0, 16);
-                startTimeInput.value = '12:30';
+                if (creationTimeInput) creationTimeInput.value = now.toISOString().slice(0, 16);
+                if (startTimeInput) startTimeInput.value = '12:30';
                 // 新增預設值
-                document.getElementById('location').value = '第五醫療大樓五樓552會議室';
-                document.getElementById('chairman').value = '陳志成';
+                const locationInput = document.getElementById('location');
+                const chairmanInput = document.getElementById('chairman');
+                if (locationInput) locationInput.value = '第五醫療大樓五樓552會議室';
+                if (chairmanInput) chairmanInput.value = '陳志成';
             }
+
+            // "未召開會議" 勾選框邏輯
+            noMeetingCheckbox.addEventListener('change', () => {
+                const isChecked = noMeetingCheckbox.checked;
+                if (isChecked) {
+                    // 隱藏內容區塊，並設定時間為 "非必填"
+                    contentFieldsContainer.classList.add('hidden');
+                    startTimeInput.required = false;
+                    endTimeInput.required = false;
+                } else {
+                    // 顯示內容區塊，並設定時間為 "必填"
+                    contentFieldsContainer.classList.remove('hidden');
+                    startTimeInput.required = true;
+                    endTimeInput.required = true;
+                }
+            });
             
             // 檔案解析按鈕事件
             parseFileButton.addEventListener('click', async () => {
@@ -342,7 +402,7 @@
                     const result = await response.json();
 
                     if (result.success && result.data) {
-                        const parsedData = result.data;
+                        const parsedData = result.data; // 修正拼寫錯誤
                         document.getElementById('meetingName').value = parsedData['會議名稱'] || '';
                         document.getElementById('meetingDate').value = parsedData['會議日期'] || '';
                         document.getElementById('startTime').value = parsedData['開始時間'] || '';
@@ -386,6 +446,19 @@
                     meetingData[key] = value;
                 }
                 
+                // 處理 "未召開" 狀態
+                if (noMeetingCheckbox.checked) {
+                    meetingData['狀態'] = '未召開';
+                    // 清空不必要的欄位
+                    allContentInputs.forEach(input => {
+                        meetingData[input.name] = ''; // 將表單資料中的內容清空
+                    });
+                    meetingData['開始時間'] = '';
+                    meetingData['結束時間'] = '';
+                } else {
+                    meetingData['狀態'] = ''; // 確保狀態是空的
+                }
+                
                 const isUpdate = !!rowIndexInput.value;
                 if (isUpdate) {
                     meetingData.action = 'updateRecord';
@@ -411,7 +484,7 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試Dbiao！', 'success');
+                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！', 'success');
                         
                         setTimeout(() => {
                            window.location.href = 'index.html'; // 假設主頁面是 index.html
@@ -428,44 +501,50 @@
 
             // 刪除按鈕點擊事件 (使用自訂視窗)
             deleteButton.addEventListener('click', () => {
-                deleteConfirmModal.classList.remove('hidden');
-                deleteConfirmModal.classList.add('flex');
-            });
-
-            cancelDeleteButton.addEventListener('click', () => {
-                deleteConfirmModal.classList.add('hidden');
-                deleteConfirmModal.classList.remove('flex');
-            });
-
-            confirmDeleteButton.addEventListener('click', async () => {
-                deleteConfirmModal.classList.add('hidden');
-                deleteConfirmModal.classList.remove('flex');
-
-                showMessage('正在刪除資料中...', 'info');
-
-                try {
-                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            action: 'deleteRecord',
-                            rowIndex: rowIndexInput.value
-                        })
-                    });
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        showMessage('會議紀錄已成功刪除！', 'success');
-                        setTimeout(() => {
-                           window.location.href = 'index.html'; // 假設主頁面是 index.html
-                        }, 2000);
-                    } else {
-                        showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
-                    }
-                } catch (error) {
-                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
-                    console.error('刪除資料時發生錯誤:', error);
+                if (deleteConfirmModal) {
+                    deleteConfirmModal.classList.remove('hidden');
+                    deleteConfirmModal.classList.add('flex');
                 }
             });
+
+            if (cancelDeleteButton) {
+                cancelDeleteButton.addEventListener('click', () => {
+                    deleteConfirmModal.classList.add('hidden');
+                    deleteConfirmModal.classList.remove('flex');
+                });
+            }
+
+            if (confirmDeleteButton) {
+                confirmDeleteButton.addEventListener('click', async () => {
+                    deleteConfirmModal.classList.add('hidden');
+                    deleteConfirmModal.classList.remove('flex');
+
+                    showMessage('正在刪除資料中...', 'info');
+
+                    try {
+                        const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                action: 'deleteRecord',
+                                rowIndex: rowIndexInput.value
+                            })
+                        });
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            showMessage('會議紀錄已成功刪除！', 'success');
+                            setTimeout(() => {
+                               window.location.href = 'index.html'; // 假設主頁面是 index.html
+                            }, 2000);
+                        } else {
+                            showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
+                        }
+                    } catch (error) {
+                        showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
+                        console.error('刪除資料時發生錯誤:', error);
+                    }
+                });
+            }
         });
     </script>
 </body></html>
