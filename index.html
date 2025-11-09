@@ -796,8 +796,7 @@
                                         } else if (i + 1 < lines.length && lines[i+1].match(/(https?:\/\/[^\s]+)/)) {
                                             // 如果這一行是描述，且下一行是 URL
                                             const description = line.replace(/：$/, '').trim();
-                                            // ** 這裡就是錯誤點！**
-                                            const url = lines[i+1].match(/(https?:\/\/[^\s]+)/)[0]; // ** 已修正 **
+                                            const url = lines[i+1].match(/(https?:\/\/[^\s]+)/)[0];
                                             
                                             if (!keyword || description.toLowerCase().includes(lowerKeyword) || url.toLowerCase().includes(lowerKeyword)) {
                                                 attachmentLinksHtml += `
@@ -946,7 +945,7 @@
                 } catch (error) {
                     console.error('查詢過程中發生錯誤:', error);
                     resultsContainer.innerHTML = '<p class="text-red-500 text-center">網路錯誤或 Apps Script 發生問題。請檢查控制台。</p>';
-                    showMessage('網路錯誤或 Apps Script G發生問題。', 'error');
+                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
                 }
             }
 
@@ -999,12 +998,13 @@
             });
 
             // 登入視窗
-            loginModal.addEventListener('click', (event) => {
-                if (event.target === loginModal) { // 點擊背景
-                    loginModal.classList.add('hidden');
-                    loginModal.classList.remove('flex');
-                }
-            });
+            // ** 已移除：點擊背景關閉的功能 **
+            // loginModal.addEventListener('click', (event) => {
+            //     if (event.target === loginModal) { // 點擊背景
+            //         loginModal.classList.add('hidden');
+            //         loginModal.classList.remove('flex');
+            //     }
+            // });
             cancelLoginButton.addEventListener('click', () => {
                 loginModal.classList.add('hidden');
                 loginModal.classList.remove('flex');
@@ -1062,7 +1062,7 @@
                 documentViewerIframe.src = ''; // 停止載入
             });
 
-            // 點擊背景關閉
+            // 點擊背景關閉 (保留這個)
             documentViewerModal.addEventListener('click', (event) => {
                 if (event.target === documentViewerModal) {
                     documentViewerModal.classList.add('hidden');
