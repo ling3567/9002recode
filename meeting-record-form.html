@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
+<!DOCTYPE html><html lang="zh-TW"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會議內容輸入/編輯</title>
@@ -12,9 +10,17 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6; /* 淺灰色背景 */
         }
+        /* 登入視窗背景 */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999; /* 確保在最上層 */
+        }
+        /* 登入視窗內容 */
+        .modal-content {
+            z-index: 1000; /* 確保在最上層 */
+        }
     </style>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+</head><body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
         <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
         
@@ -166,7 +172,27 @@
         </div>
     </div>
 
+    <!-- 刪除確認視窗 (取代 confirm) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm modal-content relative">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">確認刪除</h2>
+            <p class="text-gray-600 text-center mb-6">您確定要永久刪除這筆會議紀錄嗎？此操作無法復原。</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelDeleteButton"
+                        class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    取消
+                </button>
+                <button id="confirmDeleteButton"
+                        class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    確定刪除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Mammoth.js 用於 .docx 解析 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('meetingForm');
@@ -179,18 +205,40 @@
             const deleteButton = document.getElementById('deleteButton');
             const fileInput = document.getElementById('fileInput');
             const parseFileButton = document.getElementById('parseFileButton');
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
 
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
+
+            // 顯示訊息的輔助函數
+            function showMessage(text, type = 'info') {
+                messageText.textContent = text;
+                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+                if (type === 'success') {
+                    messageContainer.classList.add('bg-green-100', 'text-green-800');
+                } else if (type === 'error') {
+                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                } else { // info or loading
+                    messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+                }
+                messageContainer.classList.remove('hidden');
+
+                if (type !== 'info') { // 'info' (loading) messages should persist
+                    setTimeout(() => {
+                        messageContainer.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+
 
             // 載入資料的函數
             async function loadMeetingData(rowIndex) {
                 formTitle.textContent = '編輯會議內容';
                 deleteButton.classList.remove('hidden');
                 
-                messageText.textContent = '正在載入資料...';
-                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+                showMessage('正在載入資料...', 'info');
 
                 try {
                     const url = `${APPS_SCRIPT_WEB_APP_URL}?action=getRecord&rowIndex=${rowIndex}`;
@@ -220,14 +268,10 @@
                         rowIndexInput.value = rowIndex; // Store the row index
                         messageContainer.classList.add('hidden');
                     } else {
-                        messageText.textContent = '載入資料失敗: ' + (result.message || '未知錯誤');
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                        showMessage('載入資料失敗: ' + (result.message || '未知錯誤'), 'error');
                     }
                 } catch (error) {
-                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。';
-                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
                     console.error('載入資料時發生錯誤:', error);
                 }
             }
@@ -246,19 +290,23 @@
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                 creationTimeInput.value = now.toISOString().slice(0, 16);
                 startTimeInput.value = '12:30';
+                // 新增預設值
+                document.getElementById('location').value = '第五醫療大樓五樓552會議室';
+                document.getElementById('chairman').value = '陳志成';
             }
             
             // 檔案解析按鈕事件
             parseFileButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
-                    alert('請選擇一個檔案！');
+                    showMessage('請選擇一個檔案！', 'error'); // 改用 showMessage
                     return;
                 }
 
-                messageText.textContent = '正在解析檔案...';
-                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+                // 增加載入狀態
+                parseFileButton.disabled = true;
+                parseFileButton.textContent = '解析中...';
+                showMessage('正在解析檔案...', 'info');
 
                 try {
                     let fileContent = '';
@@ -279,10 +327,10 @@
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => resolve(e.target.result);
                             fileReader.onerror = (e) => reject(e);
-                            fileReader.readAsText(file);
+                            fileReader.readAsText(file, 'UTF-8'); // 指定編碼
                         });
                     }
-
+                    
                     // 呼叫 Apps Script 進行 AI 解析
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                         method: 'POST',
@@ -305,28 +353,24 @@
                         document.getElementById('chairmanReport').value = parsedData['貳、主席報告'] || '';
                         document.getElementById('lastMeetingFollowUp').value = parsedData['參、上次會議追蹤事項'] || '';
                         document.getElementById('currentMeetingDiscussion').value = parsedData['肆、本次會議報告及討論事項'] || '';
+                        // *** 修正拼寫錯誤 ***
                         document.getElementById('adHocMotion').value = parsedData['伍、臨時動議'] || '';
                         document.getElementById('nextMeetingFollowUp').value = parsedData['陸、下次會議追蹤事項'] || '';
                         document.getElementById('chairmanConclusion').value = parsedData['柒、主席結論'] || '';
                         document.getElementById('attachmentName').value = parsedData['附件名稱'] || '';
-                        
-                        messageText.textContent = '檔案解析成功，資料已填入表單！';
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+
+                        showMessage('檔案解析成功，資料已填入表單！', 'success');
                     } else {
-                        messageText.textContent = '解析失敗: ' + (result.message || '未知錯誤');
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                        showMessage('解析失敗: ' + (result.message || '未知錯誤'), 'error');
+                        console.error('Apps Script 解析失敗:', result.message);
                     }
                 } catch (error) {
-                    messageText.textContent = '解析檔案時發生錯誤。請檢查檔案格式或 Apps Script。';
-                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    showMessage('解析檔案時發生錯誤。請檢查檔案格式或 Apps Script。', 'error');
                     console.error('檔案解析錯誤:', error);
                 } finally {
-                    setTimeout(() => {
-                        messageContainer.classList.add('hidden');
-                    }, 3000);
+                    // 恢復按鈕狀態
+                    parseFileButton.disabled = false;
+                    parseFileButton.textContent = '解析檔案';
                 }
             });
 
@@ -335,9 +379,7 @@
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
 
-                messageText.textContent = '正在提交資料中，請稍候...';
-                messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+                showMessage('正在提交資料中，請稍候...', 'info');
 
                 const formData = new FormData(form);
                 const meetingData = {};
@@ -354,9 +396,11 @@
                 } else {
                     meetingData.action = 'addRecord';
                     // 在新增模式下，建立時間使用當下值
-                    meetingData['建立時間'] = new Date().toISOString().slice(0, 16);
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    meetingData['建立時間'] = now.toISOString().slice(0, 16); // Re-set creation time on submit for new records
                 }
-
+                
                 console.log('準備提交的會議資料:', meetingData);
 
                 try {
@@ -368,41 +412,37 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        messageText.textContent = isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！';
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
-                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！', 'success');
                         
                         setTimeout(() => {
-                           window.location.href = 'index.html';
+                           window.location.href = 'index.html'; // 假設主頁面是 index.html
                         }, 2000);
 
                     } else {
-                        messageText.textContent = '儲存失敗: ' + (result.message || '未知錯誤');
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800');
-                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                        showMessage('儲存失敗: ' + (result.message || '未知錯誤'), 'error');
                     }
                 } catch (error) {
                     console.error('發送資料到 Apps Script 時發生錯誤:', error);
-                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。請檢查控制台。';
-                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
-                } finally {
-                    setTimeout(() => {
-                        messageContainer.classList.add('hidden');
-                    }, 3000);
+                    showMessage('網路錯誤或 Apps Script 發生問題。請檢查控制台。', 'error');
                 }
             });
-            
-            // 刪除按鈕點擊事件
-            deleteButton.addEventListener('click', async () => {
-                if (!confirm('確定要刪除這筆會議紀錄嗎？')) {
-                    return;
-                }
-                
-                messageText.textContent = '正在刪除資料中...';
-                messageContainer.classList.remove('hidden');
-                messageContainer.classList.remove('bg-red-100', 'text-red-800');
-                messageContainer.classList.add('bg-blue-100', 'text-blue-800');
+
+            // 刪除按鈕點擊事件 (使用自訂視窗)
+            deleteButton.addEventListener('click', () => {
+                deleteConfirmModal.classList.remove('hidden');
+                deleteConfirmModal.classList.add('flex');
+            });
+
+            cancelDeleteButton.addEventListener('click', () => {
+                deleteConfirmModal.classList.add('hidden');
+                deleteConfirmModal.classList.remove('flex');
+            });
+
+            confirmDeleteButton.addEventListener('click', async () => {
+                deleteConfirmModal.classList.add('hidden');
+                deleteConfirmModal.classList.remove('flex');
+
+                showMessage('正在刪除資料中...', 'info');
 
                 try {
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
@@ -415,25 +455,18 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        messageText.textContent = '會議紀錄已成功刪除！';
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                        messageContainer.classList.add('bg-green-100', 'text-green-800');
+                        showMessage('會議紀錄已成功刪除！', 'success');
                         setTimeout(() => {
-                           window.location.href = 'index.html';
+                           window.location.href = 'index.html'; // 假設主頁面是 index.html
                         }, 2000);
                     } else {
-                        messageText.textContent = '刪除失敗: ' + (result.message || '未知錯誤');
-                        messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                        messageContainer.classList.add('bg-red-100', 'text-red-800');
+                        showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
                     }
                 } catch (error) {
-                    messageText.textContent = '網路錯誤或 Apps Script 發生問題。';
-                    messageContainer.classList.remove('bg-blue-100', 'text-blue-800');
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
+                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
                     console.error('刪除資料時發生錯誤:', error);
                 }
             });
         });
     </script>
-</body>
-</html>
+</body></html>
