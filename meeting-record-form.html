@@ -212,7 +212,7 @@
             // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
-            // 顯示訊息的輔助函數
+            // *** 修正錯誤：加入遺失的 showMessage 函式 ***
             function showMessage(text, type = 'info') {
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
@@ -231,7 +231,7 @@
                     }, 3000);
                 }
             }
-
+            // *** 修正結束 ***
 
             // 載入資料的函數
             async function loadMeetingData(rowIndex) {
@@ -327,7 +327,7 @@
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => resolve(e.target.result);
                             fileReader.onerror = (e) => reject(e);
-                            fileReader.readAsText(file, 'UTF-8'); // 指定編碼
+                            fileReader.readAsText(file); // 移除 'UTF-8' 讓瀏覽器自動偵測
                         });
                     }
                     
@@ -353,7 +353,6 @@
                         document.getElementById('chairmanReport').value = parsedData['貳、主席報告'] || '';
                         document.getElementById('lastMeetingFollowUp').value = parsedData['參、上次會議追蹤事項'] || '';
                         document.getElementById('currentMeetingDiscussion').value = parsedData['肆、本次會議報告及討論事項'] || '';
-                        // *** 修正拼寫錯誤 ***
                         document.getElementById('adHocMotion').value = parsedData['伍、臨時動議'] || '';
                         document.getElementById('nextMeetingFollowUp').value = parsedData['陸、下次會議追蹤事項'] || '';
                         document.getElementById('chairmanConclusion').value = parsedData['柒、主席結論'] || '';
@@ -412,7 +411,7 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試算表！', 'success');
+                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存到 Google 試Dbiao！', 'success');
                         
                         setTimeout(() => {
                            window.location.href = 'index.html'; // 假設主頁面是 index.html
