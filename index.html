@@ -475,58 +475,73 @@
             // 格式化並合併連續行
             function formatLines(text, keyword) {
                 if (!text) return '';
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                const formattedLines = [];
-                let currentLine = '';
 
-                lines.forEach((line, index) => {
-                    const trimmed = line.trim();
-                    let levelClass = '';
-                    let isNewBullet = false;
+                const lines = text
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line !== '');
 
-                    if (/^[一二三四五六七八九十]+、/.test(trimmed)) {
-                        levelClass = 'level-1';
-                        isNewBullet = true;
-                    } else if (/^\d+\./.test(trimmed)) {
-                        levelClass = 'level-2';
-                        isNewBullet = true;
-                    } else if (/^\(\d+\)/.test(trimmed)) {
-                        levelClass = 'level-3';
-                        isNewBullet = true;
+                const preface = [];
+                const topLevelItems = [];
+                let currentTopItem = null;
+                let currentSubItems = [];
+
+                lines.forEach(line => {
+                    const isTopLevel = /^\d+\./.test(line);
+                    const isSubItem = /^\(\d+\)/.test(line);
+
+                    if (isTopLevel) {
+                        // 儲存先前的項目
+                        if (currentTopItem) {
+                            if (currentSubItems.length > 0) {
+                                currentTopItem.content += `<ol class="mt-2 space-y-1 list-none pl-4">${currentSubItems.join('')}</ol>`;
+                            }
+                            topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
+                        }
+
+                        currentTopItem = { content: highlightKeyword(line, keyword) };
+                        currentSubItems = [];
+                        return;
                     }
 
-                    if (isNewBullet) {
-                        // 如果是新的點項，推送舊的段落 (如果有的話)
-                        if (currentLine) {
-                            if (!currentLine.endsWith('</p>')) {
-                                currentLine += '</p>'; // 封閉上一個 p
-                            }
-                            formattedLines.push(currentLine);
-                        }
-                        // 開始新的段落
-                        const classAttr = levelClass ? ` class="${levelClass}"` : '';
-                        currentLine = `<p${classAttr}>${highlightKeyword(line, keyword)}`;
-                    } else {
-                        // 如果不是新的點項，附加到當前段落
-                        // 確保 currentLine 不是空的 (例如第一行就是接續文字)
-                        if (currentLine) {
-                            currentLine += `<br>${highlightKeyword(line, keyword)}`;
+                    if (isSubItem) {
+                        const formattedLine = highlightKeyword(line, keyword);
+                        if (!currentTopItem) {
+                            currentTopItem = { content: formattedLine };
                         } else {
-                            // 如果是第一行且沒有點項，當作一般文字
-                            currentLine = `<p>${highlightKeyword(line, keyword)}`;
+                            currentSubItems.push(`<li class="leading-relaxed">${formattedLine}</li>`);
                         }
+                        return;
+                    }
+
+                    // 處理接續文字
+                    const formattedLine = highlightKeyword(line, keyword);
+                    if (currentSubItems.length > 0) {
+                        const lastIndex = currentSubItems.length - 1;
+                        currentSubItems[lastIndex] += `<br>${formattedLine}`;
+                    } else if (currentTopItem) {
+                        currentTopItem.content += `<br>${formattedLine}`;
+                    } else {
+                        preface.push(`<p class="leading-relaxed">${formattedLine}</p>`);
                     }
                 });
 
-                // 推送最後一個段落
-                if (currentLine) {
-                    if (!currentLine.endsWith('</p>')) {
-                         currentLine += '</p>'; // 封閉最後一個 p 標籤
+                if (currentTopItem) {
+                    if (currentSubItems.length > 0) {
+                        currentTopItem.content += `<ol class="mt-2 space-y-1 list-none pl-4">${currentSubItems.join('')}</ol>`;
                     }
-                    formattedLines.push(currentLine);
+                    topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
                 }
 
-                return formattedLines.join('');
+                if (topLevelItems.length > 0) {
+                    return `${preface.join('')}<ol class="space-y-2 list-none pl-0">${topLevelItems.join('')}</ol>`;
+                }
+
+                if (preface.length > 0) {
+                    return preface.join('');
+                }
+
+                return lines.map(line => `<p class="leading-relaxed">${highlightKeyword(line, keyword)}</p>`).join('');
             }
 
 
@@ -650,107 +665,29 @@
                                     const content = meeting[section.field] || '';
                                     const isSectionRelevant = keyword ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
 
-                                    // 如果有關鍵字，且此區塊不相關，則不顯示
                                     if (keyword && !isSectionRelevant) {
                                         return;
                                     }
 
-                                    // 確保只有有內容的區塊才生成
                                     if (content.trim() !== '') {
-                                        // ** 修正：預設展開 **
                                         const sectionExpandedClass = 'expanded';
                                         const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
-                                        
-                                        // 報告事項 (肆) 特殊處理
-                                        if (section.field === '肆、本次會議報告及討論事項') {
-                                            let subSectionsHtml = '';
-                                            // 嘗試匹配 "一、" "二、" "1." "(1)"
-                                            const subSectionsRegex = /([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))[\s\S]*?(?=\n([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))|$)/g;
-                                            let match;
-                                            
-                                            // 處理開頭的非點項文字
-                                            const preContentMatch = content.match(/^([\s\S]*?)(?=[一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))/);
-                                            const preContent = (preContentMatch && preContentMatch[1]) ? preContentMatch[1].trim() : '';
-                                            
-                                            if (preContent && (!keyword || preContent.toLowerCase().includes(lowerKeyword))) {
-                                                subSectionsHtml += formatLines(preContent, keyword);
-                                            }
+                                        const sectionContentHtml = formatLines(content, keyword);
 
-                                            // 重置 regex
-                                            subSectionsRegex.lastIndex = 0;
-
-                                            while ((match = subSectionsRegex.exec(content)) !== null) {
-                                                const fullSubSectionText = match[0].trim();
-                                                const isSubSectionRelevant = keyword ? fullSubSectionText.toLowerCase().includes(lowerKeyword) : true;
-
-                                                // 如果有關鍵字，且此子區塊不相關，則不顯示
-                                                if (keyword && !isSubSectionRelevant) {
-                                                    continue;
-                                                }
-
-                                                // ** 修正：預設展開 **
-                                                const subSectionExpandedClass = 'expanded';
-                                                const subSectionArrowClass = 'expanded';
-
-                                                const subSectionTitleMatch = fullSubSectionText.match(/^([一二三四五六七八九十]+[、．]|[\d]+\.|\(\d+\))[^：]*[：]?/);
-                                                const subSectionTitle = subSectionTitleMatch ? subSectionTitleMatch[0].trim() : '子項目';
-                                                const subSectionBody = subSectionTitleMatch ? fullSubSectionText.substring(subSectionTitle.length).trim() : fullSubSectionText;
-
-                                                const subSectionId = `subsection-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}-${subSectionsRegex.lastIndex}`;
-                                                
-                                                const formattedSubSectionBody = formatLines(subSectionBody, keyword);
-
-                                                subSectionsHtml += `
-                                                    <div class="mt-2 bg-blue-100 p-3 rounded-md border border-blue-200">
-                                                        <div class="flex justify-between items-center cursor-pointer section-header" data-target="${subSectionId}">
-                                                            <h5 class="text-base font-semibold text-teal-800">${highlightKeyword(subSectionTitle, keyword)}</h5>
-                                                            <svg class="arrow-icon w-4 h-4 text-gray-500 ${subSectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                            </svg>
-                                                        </div>
-                                                        <div id="${subSectionId}" class="section-content mt-1 text-gray-700 ${subSectionExpandedClass}">
-                                                            ${formattedSubSectionBody}
-                                                        </div>
-                                                    </div>
-                                                `;
-                                            }
-                                            
-                                            // 如果沒有子項目匹配，顯示全部內容
-                                            if (subSectionsHtml.trim() === '' && preContent.trim() === '') {
-                                                subSectionsHtml = formatLines(content, keyword);
-                                            }
-
-                                            cardHtml += `
-                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
-                                                        <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
-                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                    </div>
-                                                    <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
-                                                        ${subSectionsHtml}
-                                                    </div>
+                                        cardHtml += `
+                                            <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                                <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
+                                                    <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
+                                                    <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
                                                 </div>
-                                            `;
-                                        } else {
-                                            // 其他一般區塊
-                                            const sectionContentHtml = formatLines(content, keyword);
-                                            cardHtml += `
-                                                <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
-                                                        <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
-                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                    </div>
-                                                    <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
-                                                        ${sectionContentHtml}
-                                                    </div>
+                                                <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
+                                                    ${sectionContentHtml}
                                                 </div>
-                                            `;
-                                        }
+                                            </div>
+                                        `;
                                     }
                                 });
 
