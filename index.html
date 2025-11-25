@@ -562,7 +562,8 @@
                     .map(line => line.trim())
                     .filter(line => line !== '');
 
-                const subsectionPattern = /^(一、|二、|三、|四、|五、|六、|七、|八、|九、|十、)/;
+                // 支援「十一、」「十二、」等十以上的中文序號作為獨立子區塊
+                const subsectionPattern = /^(?:[一二三四五六七八九十]+、)/;
                 const subsections = [];
                 const preface = [];
                 let current = null;
