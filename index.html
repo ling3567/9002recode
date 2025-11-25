@@ -133,6 +133,14 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             padding: 1rem;
         }
+
+        .meeting-section ol > li {
+            margin-left: 0.8rem !important;
+        }
+
+        .meeting-section ul > li {
+            margin-left: 0.8rem !important;
+        }
     </style>
 </head>
 <body class="bg-sky-50 flex flex-col items-center min-h-screen p-4">
@@ -751,7 +759,7 @@
                                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                     </svg>
                                                 </div>
-                                                <div id="${sectionId}" class="section-content mt-2 text-gray-700 ${sectionExpandedClass}">
+                                                <div id="${sectionId}" class="section-content meeting-section mt-2 text-gray-700 ${sectionExpandedClass}">
                                                     ${sectionContentHtml}
                                                 </div>
                                             </div>
@@ -830,7 +838,7 @@
                                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                                     </svg>
                                                 </div>
-                                                <div id="${attachmentSectionId}" class="section-content mt-2 text-gray-700 ${attachmentExpandedClass}">
+                                                <div id="${attachmentSectionId}" class="section-content meeting-section mt-2 text-gray-700 ${attachmentExpandedClass}">
                                                     ${attachmentLinksHtml}
                                                 </div>
                                             </div>
