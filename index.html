@@ -124,6 +124,15 @@
             margin-left: 2em;
             text-indent: -1.5em;
         }
+
+        /* 肆、本次會議報告及討論事項 - 子區塊卡片樣式 */
+        .sub-section-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+        }
     </style>
 </head>
 <body class="bg-sky-50 flex flex-col items-center min-h-screen p-4">
@@ -544,6 +553,62 @@
                 return lines.map(line => `<p class="leading-relaxed">${highlightKeyword(line, keyword)}</p>`).join('');
             }
 
+            // 將「肆、本次會議報告及討論事項」中的「一、二、三…」拆成子區塊卡片
+            function formatDiscussionSections(text, keyword) {
+                if (!text) return '';
+
+                const lines = text
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line !== '');
+
+                const subsectionPattern = /^(一、|二、|三、|四、|五、|六、|七、|八、|九、|十、)/;
+                const subsections = [];
+                const preface = [];
+                let current = null;
+
+                lines.forEach(line => {
+                    if (subsectionPattern.test(line)) {
+                        if (current) {
+                            subsections.push(current);
+                        }
+                        current = { title: line, contentLines: [] };
+                    } else if (current) {
+                        current.contentLines.push(line);
+                    } else {
+                        preface.push(line);
+                    }
+                });
+
+                if (current) {
+                    subsections.push(current);
+                }
+
+                // 如果沒有符合的子項目，回退到原本的格式化方式
+                if (subsections.length === 0) {
+                    return formatLines(text, keyword);
+                }
+
+                const prefacedSections = [...subsections];
+
+                if (preface.length > 0 && prefacedSections.length > 0) {
+                    prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines];
+                }
+
+                return prefacedSections.map(section => {
+                    const subsectionContent = section.contentLines.length > 0
+                        ? formatLines(section.contentLines.join('\n'), keyword)
+                        : '';
+
+                    return `
+                        <div class="card sub-section-card mb-3">
+                            <h6 class="text-base font-semibold text-slate-800 mb-2">${highlightKeyword(section.title, keyword)}</h6>
+                            <div class="text-gray-700 leading-relaxed space-y-2">${subsectionContent}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
 
             // 檢查會議紀錄或其內容是否包含關鍵字
             function containsKeyword(data, keyword) {
@@ -673,7 +738,9 @@
                                         const sectionExpandedClass = 'expanded';
                                         const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
-                                        const sectionContentHtml = formatLines(content, keyword);
+                                        const sectionContentHtml = section.field === '肆、本次會議報告及討論事項'
+                                            ? formatDiscussionSections(content, keyword)
+                                            : formatLines(content, keyword);
 
                                         cardHtml += `
                                             <div class="mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
