@@ -542,8 +542,11 @@
             }
 
             // 將「肆、本次會議報告及討論事項」中的「一、二、三…」拆成子區塊卡片
-            function formatDiscussionSections(text, keyword) {
+            function formatDiscussionSections(text, keyword, onlyMatched = false) {
                 if (!text) return '';
+
+                const lowerKeyword = keyword ? keyword.toLowerCase() : '';
+                const hasKeyword = lowerKeyword.length > 0;
 
                 const lines = text
                     .split('\n')
@@ -578,10 +581,22 @@
                     return formatLines(text, keyword);
                 }
 
-                const prefacedSections = [...subsections];
+                let prefacedSections = [...subsections];
+
+                if (onlyMatched && hasKeyword) {
+                    prefacedSections = prefacedSections.filter(section => {
+                        const titleMatch = section.title.toLowerCase().includes(lowerKeyword);
+                        const contentMatch = section.contentLines.some(line => line.toLowerCase().includes(lowerKeyword));
+                        return titleMatch || contentMatch;
+                    });
+                }
 
                 if (preface.length > 0 && prefacedSections.length > 0) {
-                    prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines];
+                    const shouldKeepPreface = !onlyMatched || !hasKeyword || preface.some(line => line.toLowerCase().includes(lowerKeyword));
+
+                    if (shouldKeepPreface) {
+                        prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines];
+                    }
                 }
 
                 return prefacedSections.map(section => {
@@ -627,6 +642,7 @@
 
             // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
+                const isKeywordSearch = keyword.trim().length > 0;
                 let lowerKeyword = keyword.toLowerCase();
 
                 initialMessage.classList.add('hidden');
@@ -724,9 +740,9 @@
 
                                 meetingSections.forEach(section => {
                                     const content = meeting[section.field] || '';
-                                    const isSectionRelevant = keyword ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
+                                    const isSectionRelevant = isKeywordSearch ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
 
-                                    if (keyword && !isSectionRelevant) {
+                                    if (isKeywordSearch && !isSectionRelevant) {
                                         return;
                                     }
 
@@ -734,9 +750,18 @@
                                         const sectionExpandedClass = 'expanded';
                                         const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
-                                        const sectionContentHtml = section.field === '肆、本次會議報告及討論事項'
-                                            ? formatDiscussionSections(content, keyword)
+                                        const isDiscussionSection = section.field === '肆、本次會議報告及討論事項';
+                                        const sectionContentHtml = isDiscussionSection
+                                            ? formatDiscussionSections(content, keyword, isKeywordSearch)
                                             : formatLines(content, keyword);
+
+                                        if (isKeywordSearch && isDiscussionSection) {
+                                            // 關鍵字搜尋時僅呈現相關子區塊，不顯示整個「肆」的標題卡片
+                                            if (sectionContentHtml) {
+                                                sectionsHtml += sectionContentHtml;
+                                            }
+                                            return;
+                                        }
 
                                         sectionsHtml += `
                                             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
