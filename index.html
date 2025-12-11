@@ -543,8 +543,9 @@
 
             // 將「肆、本次會議報告及討論事項」中的「一、二、三…」拆成子區塊卡片
             function formatDiscussionSections(text, keyword) {
-                if (!text) return '';
+                if (!text || !keyword) return '';
 
+                const lowerKeyword = keyword.toLowerCase();
                 const lines = text
                     .split('\n')
                     .map(line => line.trim())
@@ -584,7 +585,12 @@
                     prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines];
                 }
 
-                return prefacedSections.map(section => {
+                const filteredSections = prefacedSections.filter(section => {
+                    const contentText = section.contentLines.join(' ').toLowerCase();
+                    return section.title.toLowerCase().includes(lowerKeyword) || contentText.includes(lowerKeyword);
+                });
+
+                return filteredSections.map(section => {
                     const subsectionContent = section.contentLines.length > 0
                         ? formatLines(section.contentLines.join('\n'), keyword)
                         : '';
@@ -712,11 +718,15 @@
 
                                 // 2. 會議紀錄內容區塊
                                 let sectionsHtml = '';
+                                const discussionContent = formatDiscussionSections(meeting['肆、本次會議報告及討論事項'] || '', keyword);
+                                if (discussionContent) {
+                                    sectionsHtml += discussionContent;
+                                }
+
                                 const meetingSections = [
                                     { title: '壹、頒獎表揚', field: '壹、頒獎表揚' },
                                     { title: '貳、主席報告', field: '貳、主席報告' },
                                     { title: '參、上次會議追蹤事項', field: '參、上次會議追蹤事項' },
-                                    { title: '肆、本次會議報告及討論事項', field: '肆、本次會議報告及討論事項' },
                                     { title: '伍、臨時動議', field: '伍、臨時動議' },
                                     { title: '陸、下次會議追蹤事項', field: '陸、下次會議追蹤事項' },
                                     { title: '柒、主席結論', field: '柒、主席結論' }
@@ -733,10 +743,8 @@
                                     if (content.trim() !== '') {
                                         const sectionExpandedClass = 'expanded';
                                         const sectionArrowClass = 'expanded';
-                                        const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
-                                        const sectionContentHtml = section.field === '肆、本次會議報告及討論事項'
-                                            ? formatDiscussionSections(content, keyword)
-                                            : formatLines(content, keyword);
+                                        const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g,'')}`;
+                                        const sectionContentHtml = formatLines(content, keyword);
 
                                         sectionsHtml += `
                                             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
