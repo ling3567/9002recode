@@ -190,6 +190,10 @@
                         class="flex-grow px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
                     搜尋會議
                 </button>
+                <button id="clearButton"
+                        class="flex-grow px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    清除條件
+                </button>
                 <button id="showAllButton"
                         class="flex-grow px-6 py-2 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition duration-150 ease-in-out">
                     顯示所有會議
@@ -248,11 +252,12 @@
             const startDateInput = document.getElementById('startDateInput');
             const endDateInput = document.getElementById('endDateInput');
             const searchButton = document.getElementById('searchButton');
+            const clearButton = document.getElementById('clearButton');
             const showAllButton = document.getElementById('showAllButton');
             const resultsContainer = document.getElementById('resultsContainer');
             const messageContainer = document.getElementById('messageContainer');
             const messageText = document.getElementById('messageText');
-            const initialMessage = document.getElementById('initialMessage');
+            let initialMessage = document.getElementById('initialMessage');
             const monthQuickNavYearLabel = document.getElementById('monthQuickNavYear');
             const monthQuickNavButtons = document.getElementById('monthQuickNavButtons');
             const prevYearButton = document.getElementById('prevYearButton');
@@ -645,7 +650,9 @@
                 const isKeywordSearch = keyword.trim().length > 0;
                 let lowerKeyword = keyword.toLowerCase();
 
-                initialMessage.classList.add('hidden');
+                if (initialMessage) {
+                    initialMessage.classList.add('hidden');
+                }
                 resultsContainer.innerHTML = '';
                 showMessage('正在查詢會議內容，請稍候...', 'info');
 
@@ -924,6 +931,17 @@
                 if (event.key === 'Enter') {
                     searchButton.click();
                 }
+            });
+
+            clearButton.addEventListener('click', () => {
+                keywordInput.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                messageContainer.classList.add('hidden');
+                resultsContainer.innerHTML = '<p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>';
+                initialMessage = document.getElementById('initialMessage');
+                updateMonthNav(currentNavYear, new Set());
+                keywordInput.focus();
             });
 
             // --- 登入功能 ---
