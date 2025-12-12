@@ -111,20 +111,6 @@
             line-height: 1.75 !important; /* 增加行距 */
         }
 
-        /* 會議內容排版樣式 */
-        .level-1 {
-            margin-left: 2em;
-            text-indent: -2em;
-        }
-        .level-2 {
-            margin-left: 0.8em;
-            text-indent: -0.8em;
-        }
-        .level-3 {
-            margin-left: 2em;
-            text-indent: -1.5em;
-        }
-
         /* 肆、本次會議報告及討論事項 - 子區塊卡片樣式 */
         .sub-section-card {
             background-color: #f8fafc;
@@ -134,12 +120,33 @@
             padding: 1rem;
         }
 
-        .meeting-section ol > li {
-            margin-left: 0.8rem !important;
+        /* 會議紀錄條列的懸掛縮排設定 */
+        .meeting-section {
+            line-height: 1.7;
         }
 
-        .meeting-section ul > li {
-            margin-left: 0.8rem !important;
+        .meeting-section p,
+        .meeting-section li {
+            margin-bottom: 0.3em;
+        }
+
+        /* 第1層：1. 2. 3.  → 凸排 0.8 字元 */
+        .meeting-section .num-level-1 {
+            padding-left: 0.8em;
+            text-indent: -0.8em;
+        }
+
+        /* 第2層：(1)(2) → 整段比第1層再往右縮排 + 自身也凸排 */
+        .meeting-section .num-level-2 {
+            margin-left: 0.8em;
+            padding-left: 1.2em;
+            text-indent: -1.2em;
+        }
+
+        .meeting-section ol,
+        .meeting-section ul {
+            padding-left: 0;
+            margin-left: 0;
         }
     </style>
 </head>
@@ -353,6 +360,20 @@
                 const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedKeyword, 'gi');
                 return text.replace(regex, match => `<span class="highlight">${match}</span>`);
+            }
+
+            function applyNumberingClasses(container) {
+                if (!container) return;
+                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
+
+                targets.forEach(element => {
+                    const text = element.textContent.trim();
+                    if (/^\(\d+\)/.test(text)) {
+                        element.classList.add('num-level-2');
+                    } else if (/^\d+\./.test(text)) {
+                        element.classList.add('num-level-1');
+                    }
+                });
             }
 
             function createMonthButtons(year) {
@@ -762,13 +783,13 @@
                                             ? formatDiscussionSections(content, keyword, isKeywordSearch)
                                             : formatLines(content, keyword);
 
-                                        if (isKeywordSearch && isDiscussionSection) {
-                                            // 關鍵字搜尋時僅呈現相關子區塊，不顯示整個「肆」的標題卡片
-                                            if (sectionContentHtml) {
-                                                sectionsHtml += sectionContentHtml;
-                                            }
-                                            return;
+                                    if (isKeywordSearch && isDiscussionSection) {
+                                        // 關鍵字搜尋時僅呈現相關子區塊，不顯示整個「肆」的標題卡片
+                                        if (sectionContentHtml) {
+                                            sectionsHtml += `<div class="meeting-section">${sectionContentHtml}</div>`;
                                         }
+                                        return;
+                                    }
 
                                         sectionsHtml += `
                                             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -801,6 +822,7 @@
                                 }
 
                                 meetingCard.innerHTML = cardHtml;
+                                applyNumberingClasses(meetingCard);
                                 meetingCards.push({
                                     element: meetingCard,
                                     month: meetingMonth,
