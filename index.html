@@ -143,6 +143,12 @@
             text-indent: -1.2em;
         }
 
+        /* 中文大項：一、二、三… → Word 凸排 2 字元 */
+        .meeting-section .num-cn-1 {
+            padding-left: 2em;
+            text-indent: -2em;
+        }
+
         .meeting-section ol,
         .meeting-section ul {
             padding-left: 0;
@@ -372,6 +378,8 @@
                         element.classList.add('num-level-2');
                     } else if (/^\d+\./.test(text)) {
                         element.classList.add('num-level-1');
+                    } else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(text)) {
+                        element.classList.add('num-cn-1');
                     }
                 });
             }
