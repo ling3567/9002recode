@@ -127,7 +127,7 @@
 
         .meeting-section p,
         .meeting-section li {
-            margin: 0 0 0.25em 0;
+            margin-bottom: 4px;
         }
 
         /* 第1層：1. 2. 3.  → 凸排 0.8 字元 */
@@ -151,16 +151,16 @@
 
         /* 圓圈①②③：建議視為第3層 */
         .meeting-section .num-circle-1 {
-            margin-left: 1.2em;
-            padding-left: 1.2em;
-            text-indent: -1.2em;
+            margin-left: 41px;
+            padding-left: 7px;
+            text-indent: -7px;
         }
 
         /* a. b. c.：建議視為第4層 */
         .meeting-section .num-alpha-1 {
-            margin-left: 2.0em;
-            padding-left: 1.0em;
-            text-indent: -1.0em;
+            margin-left: 49px;
+            padding-left: 6px;
+            text-indent: -6px;
         }
 
         .meeting-section ol,
@@ -397,7 +397,7 @@
                         element.classList.add('num-cn-1');
                     } else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(text)) {
                         element.classList.add('num-circle-1');
-                    } else if (/^\s*[a-eA-E]\./.test(rawText)) {
+                    } else if (/^\s*[a-e]\./.test(rawText)) {
                         element.classList.add('num-alpha-1');
                     }
                 });
