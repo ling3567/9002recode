@@ -384,7 +384,7 @@
 
             function applyNumberingClasses(container) {
                 if (!container) return;
-                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
+                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li, .meeting-section div');
 
                 targets.forEach(element => {
                     const rawText = element.textContent || '';
@@ -528,8 +528,8 @@
 
                 const lines = text
                     .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line !== '');
+                    .map(line => line.trimEnd())
+                    .filter(line => line.trim() !== '');
 
                 const preface = [];
                 const topLevelItems = [];
@@ -537,8 +537,11 @@
                 let currentSubItems = [];
 
                 lines.forEach(line => {
-                    const isTopLevel = /^\d+\./.test(line);
-                    const isSubItem = /^\(\d+\)/.test(line);
+                    const trimmedLine = line.trim();
+                    const isTopLevel = /^\d+\./.test(trimmedLine);
+                    const isSubItem = /^\(\d+\)/.test(trimmedLine);
+                    const isCircleItem = /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmedLine);
+                    const isAlphaItem = /^\s*[a-e]\./i.test(line);
 
                     if (isTopLevel) {
                         // 儲存先前的項目
@@ -549,13 +552,13 @@
                             topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
                         }
 
-                        currentTopItem = { content: highlightKeyword(line, keyword) };
+                        currentTopItem = { content: highlightKeyword(trimmedLine, keyword) };
                         currentSubItems = [];
                         return;
                     }
 
                     if (isSubItem) {
-                        const formattedLine = highlightKeyword(line, keyword);
+                        const formattedLine = highlightKeyword(trimmedLine, keyword);
                         if (!currentTopItem) {
                             currentTopItem = { content: formattedLine };
                         } else {
@@ -564,8 +567,24 @@
                         return;
                     }
 
+                    if (isCircleItem || isAlphaItem) {
+                        const className = isCircleItem ? 'num-circle-1' : 'num-alpha-1';
+                        const formattedLine = highlightKeyword(trimmedLine, keyword);
+                        const paragraph = `<p class="leading-relaxed ${className}">${formattedLine}</p>`;
+
+                        if (currentSubItems.length > 0) {
+                            const lastIndex = currentSubItems.length - 1;
+                            currentSubItems[lastIndex] += paragraph;
+                        } else if (currentTopItem) {
+                            currentTopItem.content += paragraph;
+                        } else {
+                            preface.push(paragraph);
+                        }
+                        return;
+                    }
+
                     // 處理接續文字
-                    const formattedLine = highlightKeyword(line, keyword);
+                    const formattedLine = highlightKeyword(trimmedLine, keyword);
                     if (currentSubItems.length > 0) {
                         const lastIndex = currentSubItems.length - 1;
                         currentSubItems[lastIndex] += `<br>${formattedLine}`;
