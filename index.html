@@ -132,8 +132,9 @@
 
         /* 第1層：1. 2. 3.  → 凸排 0.8 字元 */
         .meeting-section .num-level-1 {
-            padding-left: 0.8em;
-            text-indent: -0.8em;
+            margin-left: 0 !important;
+            padding-left: 0.8em !important;
+            text-indent: -0.8em !important;
         }
 
         /* 第2層：(1)(2) → 整段比第1層再往右縮排 + 自身也凸排 */
@@ -165,8 +166,8 @@
 
         .meeting-section ol,
         .meeting-section ul {
-            padding-left: 0;
-            margin-left: 0;
+            padding-left: 0 !important;
+            margin-left: 0 !important;
         }
     </style>
 </head>
@@ -603,7 +604,7 @@
                 }
 
                 if (topLevelItems.length > 0) {
-                    return `${preface.join('')}<ol class="space-y-2 list-none pl-0">${topLevelItems.join('')}</ol>`;
+                    return `${preface.join('')}<ol class="space-y-2 list-none pl-0 ml-0">${topLevelItems.join('')}</ol>`;
                 }
 
                 if (preface.length > 0) {
@@ -710,6 +711,51 @@
                     }
                 }
                 return false;
+            }
+
+            function parseAttachments(meeting) {
+                const nameField = (meeting['附件名稱'] || '').trim();
+                if (!nameField) return [];
+
+                const names = nameField
+                    .split(/\r?\n/)
+                    .map(name => name.trim())
+                    .filter(name => name !== '');
+
+                const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim();
+                const links = linkFieldRaw
+                    ? linkFieldRaw
+                        .split(/\r?\n/)
+                        .map(link => link.trim())
+                        .filter(link => link !== '')
+                    : [];
+
+                const maxLength = Math.max(names.length, links.length);
+                const attachments = [];
+
+                for (let i = 0; i < maxLength; i++) {
+                    const rawName = names[i] || '';
+                    let name = rawName;
+                    let url = links[i] || '';
+
+                    if (!url) {
+                        const urlMatch = rawName.match(/https?:\/\/\S+/);
+                        if (urlMatch) {
+                            url = urlMatch[0];
+                            name = rawName.replace(url, '').trim();
+                        }
+                    }
+
+                    if (!name && url) {
+                        name = url;
+                    }
+
+                    if (url) {
+                        attachments.push({ name, url });
+                    }
+                }
+
+                return attachments;
             }
 
             // 執行查詢的函數
@@ -863,6 +909,27 @@
                                             <div class="flex flex-col gap-3">
                                                 ${sectionsHtml}
                                             </div>
+                                        </div>
+                                    `;
+                                }
+
+                                const attachments = parseAttachments(meeting);
+                                if (attachments.length > 0) {
+                                    const attachmentList = attachments.map(attachment => {
+                                        const safeUrl = attachment.url.replace(/'/g, "\\'");
+                                        const displayName = highlightKeyword(attachment.name, keyword);
+                                        return `<li><a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline">${displayName}</a></li>`;
+                                    }).join('');
+
+                                    cardHtml += `
+                                        <div class="mt-4">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <div class="h-4 w-1 rounded-full bg-slate-400"></div>
+                                                <p class="text-sm font-semibold text-slate-700">附件</p>
+                                            </div>
+                                            <ul class="list-disc pl-5 space-y-1">
+                                                ${attachmentList}
+                                            </ul>
                                         </div>
                                     `;
                                 }
