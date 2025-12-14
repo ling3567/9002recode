@@ -118,22 +118,16 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             padding: 1rem;
-            margin-left: 0 !important;
-            padding-left: 0 !important;
         }
 
         /* 會議紀錄條列的懸掛縮排設定 */
         .meeting-section {
             line-height: 1.7;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 0 !important;
-            padding-left: 0.75rem !important;
+            padding-left: 1.25rem;
         }
 
         .section-content {
-            padding-left: 0 !important;
-            margin-left: 0 !important;
+            padding-left: 1.25rem;
         }
 
         .meeting-section p,
@@ -724,21 +718,22 @@
                 return false;
             }
 
+            function cleanAttachmentName(name) {
+                const trimmed = (name || '').trim();
+                const lower = trimmed.toLowerCase();
+                const isInvalid =
+                    trimmed === '' ||
+                    trimmed === '未命名附件' ||
+                    trimmed === '無' ||
+                    lower === 'n/a' ||
+                    lower === 'na' ||
+                    lower === 'none';
+                return isInvalid ? '' : trimmed;
+            }
+
             function parseAttachments(meeting) {
                 const nameField = (meeting['附件名稱'] || '').trim();
                 if (!nameField && !(meeting['附件連結'] || meeting['附件URL'])) return [];
-
-                const cleanAttachmentName = (name) => {
-                    const trimmed = (name || '').trim();
-                    const lower = trimmed.toLowerCase();
-                    const isInvalid =
-                        trimmed === '未命名附件' ||
-                        trimmed === '無' ||
-                        lower === 'n/a' ||
-                        lower === 'na' ||
-                        lower === 'none';
-                    return isInvalid ? '' : trimmed;
-                };
 
                 const names = nameField
                     ? nameField
@@ -928,18 +923,19 @@
                                     }
                                 });
 
-                                const attachments = parseAttachments(meeting);
-                                if (attachments.length > 0) {
-                                    const attachmentId = `attachments-${meeting.rowIndex}`;
-                                    const attachmentList = attachments.map((attachment, index) => {
-                                        const safeUrl = attachment.url.replace(/'/g, "\\'");
-                                        const attachmentLabel = formatAttachmentLabel(index);
-                                        const displayName = attachment.name ? ` ${highlightKeyword(attachment.name, keyword)}` : '';
-                                        const displayUrl = highlightKeyword(attachment.url, keyword);
-                                        return `
-                                            <div class="leading-relaxed space-y-1">
-                                                <p class="font-semibold text-gray-800">${attachmentLabel}${displayName}</p>
-                                                <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
+                                    const attachments = parseAttachments(meeting);
+                                    if (attachments.length > 0) {
+                                        const attachmentId = `attachments-${meeting.rowIndex}`;
+                                        const attachmentList = attachments.map((attachment, index) => {
+                                            const safeUrl = attachment.url.replace(/'/g, "\\'");
+                                            const attachmentLabel = formatAttachmentLabel(index);
+                                        const sanitizedName = cleanAttachmentName(attachment.name);
+                                        const displayName = sanitizedName ? ` ${highlightKeyword(sanitizedName, keyword)}` : '';
+                                            const displayUrl = highlightKeyword(attachment.url, keyword);
+                                            return `
+                                                <div class="leading-relaxed space-y-1">
+                                                    <p class="font-semibold text-gray-800">${attachmentLabel}${displayName}</p>
+                                                    <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
                                             </div>
                                         `;
                                     }).join('');
