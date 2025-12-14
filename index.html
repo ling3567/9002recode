@@ -123,6 +123,10 @@
         /* 會議紀錄條列的懸掛縮排設定 */
         .meeting-section {
             line-height: 1.7;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
 
         .meeting-section p,
@@ -548,7 +552,7 @@
                         // 儲存先前的項目
                         if (currentTopItem) {
                             if (currentSubItems.length > 0) {
-                                currentTopItem.content += `<ol class="mt-2 space-y-1 list-none pl-4">${currentSubItems.join('')}</ol>`;
+                                currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`;
                             }
                             topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
                         }
@@ -598,7 +602,7 @@
 
                 if (currentTopItem) {
                     if (currentSubItems.length > 0) {
-                        currentTopItem.content += `<ol class="mt-2 space-y-1 list-none pl-4">${currentSubItems.join('')}</ol>`;
+                        currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`;
                     }
                     topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
                 }
@@ -758,6 +762,13 @@
                 return attachments;
             }
 
+            function formatAttachmentLabel(index) {
+                const labels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
+                    '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十'];
+                const label = labels[index] || `${index + 1}`;
+                return `附件${label}`;
+            }
+
             // 執行查詢的函數
             async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
                 const isKeywordSearch = keyword.trim().length > 0;
@@ -899,6 +910,39 @@
                                     }
                                 });
 
+                                const attachments = parseAttachments(meeting);
+                                if (attachments.length > 0) {
+                                    const attachmentId = `attachments-${meeting.rowIndex}`;
+                                    const attachmentList = attachments.map((attachment, index) => {
+                                        const safeUrl = attachment.url.replace(/'/g, "\\'");
+                                        const displayName = highlightKeyword(attachment.name, keyword);
+                                        const displayUrl = highlightKeyword(attachment.url, keyword);
+                                        const attachmentLabel = formatAttachmentLabel(index);
+                                        return `
+                                            <li class="leading-relaxed">
+                                                <p class="font-medium text-gray-800">${attachmentLabel} ${displayName}</p>
+                                                <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
+                                            </li>
+                                        `;
+                                    }).join('');
+
+                                    sectionsHtml += `
+                                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                            <div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentId}">
+                                                <h4 class="text-lg font-semibold text-teal-700">附件</h4>
+                                                <svg class="arrow-icon w-5 h-5 text-gray-600 expanded" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </div>
+                                            <div id="${attachmentId}" class="section-content meeting-section mt-2 text-gray-700 expanded">
+                                                <ol class="space-y-3 list-none pl-0 ml-0">
+                                                    ${attachmentList}
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
                                 if (sectionsHtml) {
                                     cardHtml += `
                                         <div class="space-y-3">
@@ -909,27 +953,6 @@
                                             <div class="flex flex-col gap-3">
                                                 ${sectionsHtml}
                                             </div>
-                                        </div>
-                                    `;
-                                }
-
-                                const attachments = parseAttachments(meeting);
-                                if (attachments.length > 0) {
-                                    const attachmentList = attachments.map(attachment => {
-                                        const safeUrl = attachment.url.replace(/'/g, "\\'");
-                                        const displayName = highlightKeyword(attachment.name, keyword);
-                                        return `<li><a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline">${displayName}</a></li>`;
-                                    }).join('');
-
-                                    cardHtml += `
-                                        <div class="mt-4">
-                                            <div class="flex items-center gap-2 mb-2">
-                                                <div class="h-4 w-1 rounded-full bg-slate-400"></div>
-                                                <p class="text-sm font-semibold text-slate-700">附件</p>
-                                            </div>
-                                            <ul class="list-disc pl-5 space-y-1">
-                                                ${attachmentList}
-                                            </ul>
                                         </div>
                                     `;
                                 }
