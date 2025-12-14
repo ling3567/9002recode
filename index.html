@@ -125,10 +125,10 @@
         /* 會議紀錄條列的懸掛縮排設定 */
         .meeting-section {
             line-height: 1.7;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
+            padding: 0 !important;
+            padding-left: 0.75rem !important;
         }
 
         .section-content {
@@ -726,12 +726,25 @@
 
             function parseAttachments(meeting) {
                 const nameField = (meeting['附件名稱'] || '').trim();
-                if (!nameField) return [];
+                if (!nameField && !(meeting['附件連結'] || meeting['附件URL'])) return [];
+
+                const cleanAttachmentName = (name) => {
+                    const trimmed = (name || '').trim();
+                    const lower = trimmed.toLowerCase();
+                    const isInvalid =
+                        trimmed === '未命名附件' ||
+                        trimmed === '無' ||
+                        lower === 'n/a' ||
+                        lower === 'na' ||
+                        lower === 'none';
+                    return isInvalid ? '' : trimmed;
+                };
 
                 const names = nameField
-                    .split(/\r?\n/)
-                    .map(name => name.trim())
-                    .filter(name => name !== '');
+                    ? nameField
+                        .split(/\r?\n/)
+                        .map(name => cleanAttachmentName(name))
+                    : [];
 
                 const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim();
                 const links = linkFieldRaw
@@ -753,13 +766,11 @@
                         const urlMatch = rawName.match(/https?:\/\/\S+/);
                         if (urlMatch) {
                             url = urlMatch[0];
-                            name = rawName.replace(url, '').trim();
+                            name = cleanAttachmentName(rawName.replace(url, '').trim());
                         }
                     }
 
-                    if (!name && url) {
-                        name = '';
-                    }
+                    name = cleanAttachmentName(name);
 
                     if (url) {
                         attachments.push({ name, url });
@@ -922,13 +933,12 @@
                                     const attachmentId = `attachments-${meeting.rowIndex}`;
                                     const attachmentList = attachments.map((attachment, index) => {
                                         const safeUrl = attachment.url.replace(/'/g, "\\'");
-                                        const attachmentName = attachment.name || '未命名附件';
-                                        const displayName = highlightKeyword(attachmentName, keyword);
-                                        const displayUrl = highlightKeyword(attachment.url, keyword);
                                         const attachmentLabel = formatAttachmentLabel(index);
+                                        const displayName = attachment.name ? ` ${highlightKeyword(attachment.name, keyword)}` : '';
+                                        const displayUrl = highlightKeyword(attachment.url, keyword);
                                         return `
                                             <div class="leading-relaxed space-y-1">
-                                                <p class="font-semibold text-gray-800">${attachmentLabel} ${displayName}</p>
+                                                <p class="font-semibold text-gray-800">${attachmentLabel}${displayName}</p>
                                                 <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
                                             </div>
                                         `;
