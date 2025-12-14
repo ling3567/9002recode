@@ -118,6 +118,8 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             padding: 1rem;
+            margin-left: 0 !important;
+            padding-left: 0 !important;
         }
 
         /* 會議紀錄條列的懸掛縮排設定 */
@@ -127,6 +129,11 @@
             padding-right: 0 !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
+        }
+
+        .section-content {
+            padding-left: 0 !important;
+            margin-left: 0 !important;
         }
 
         .meeting-section p,
@@ -389,7 +396,7 @@
 
             function applyNumberingClasses(container) {
                 if (!container) return;
-                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li, .meeting-section div');
+                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
 
                 targets.forEach(element => {
                     const rawText = element.textContent || '';
@@ -751,7 +758,7 @@
                     }
 
                     if (!name && url) {
-                        name = url;
+                        name = '';
                     }
 
                     if (url) {
@@ -915,14 +922,15 @@
                                     const attachmentId = `attachments-${meeting.rowIndex}`;
                                     const attachmentList = attachments.map((attachment, index) => {
                                         const safeUrl = attachment.url.replace(/'/g, "\\'");
-                                        const displayName = highlightKeyword(attachment.name, keyword);
+                                        const attachmentName = attachment.name || '未命名附件';
+                                        const displayName = highlightKeyword(attachmentName, keyword);
                                         const displayUrl = highlightKeyword(attachment.url, keyword);
                                         const attachmentLabel = formatAttachmentLabel(index);
                                         return `
-                                            <li class="leading-relaxed">
-                                                <p class="font-medium text-gray-800">${attachmentLabel} ${displayName}</p>
+                                            <div class="leading-relaxed space-y-1">
+                                                <p class="font-semibold text-gray-800">${attachmentLabel} ${displayName}</p>
                                                 <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
-                                            </li>
+                                            </div>
                                         `;
                                     }).join('');
 
@@ -935,9 +943,9 @@
                                                 </svg>
                                             </div>
                                             <div id="${attachmentId}" class="section-content meeting-section mt-2 text-gray-700 expanded">
-                                                <ol class="space-y-3 list-none pl-0 ml-0">
+                                                <div class="space-y-3">
                                                     ${attachmentList}
-                                                </ol>
+                                                </div>
                                             </div>
                                         </div>
                                     `;
