@@ -882,7 +882,7 @@
                                     { title: '柒、主席結論', field: '柒、主席結論' }
                                 ];
 
-                                meetingSections.forEach(section => {
+                                meetingSections.forEach((section, sectionIndex) => {
                                     const content = meeting[section.field] || '';
                                     const isSectionRelevant = isKeywordSearch ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
 
@@ -893,7 +893,7 @@
                                     if (content.trim() !== '') {
                                         const sectionExpandedClass = 'expanded';
                                         const sectionArrowClass = 'expanded';
-                                        const sectionId = `section-${meeting.rowIndex}-${section.field.replace(/[^a-zA-Z0-9]/g, '')}`;
+                                        const sectionId = `section-${meeting.rowIndex}-${sectionIndex}`;
                                         const isDiscussionSection = section.field === '肆、本次會議報告及討論事項';
                                         const sectionContentHtml = isDiscussionSection
                                             ? formatDiscussionSections(content, keyword, isKeywordSearch)
