@@ -929,7 +929,7 @@
                                     const attachmentList = attachments.map((attachment, index) => {
                                         const safeUrl = attachment.url.replace(/'/g, "\\'");
                                         const attachmentLabel = formatAttachmentLabel(index);
-                                        const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
+                                        const displayName = attachment.name ? ` ${highlightKeyword(attachment.name, keyword)}` : '';
                                         const displayUrl = highlightKeyword(attachment.url, keyword);
                                         return `
                                             <div class="leading-relaxed space-y-1">
