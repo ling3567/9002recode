@@ -773,28 +773,42 @@
             .filter(Boolean);
 
         const attachments = [];
+        const findUrl = (text) => {
+            const match = text.match(/https?:\/\/\S+/);
+            return match ? match[0] : '';
+        };
+        const parseTitle = (text, index) => {
+            const m = text.match(/^(附件[一二三四五六七八九十]+)(.+)$/);
+            if (m) {
+                return { code: m[1].trim(), name: m[2].trim() };
+            }
+            return { code: formatAttachmentLabel(index), name: text.trim() };
+        };
 
         for (let i = 0; i < lines.length; i += 2) {
             const titleLine = lines[i] || '';
-            const urlLine = lines[i + 1] || '';
+            const nextLine = lines[i + 1] || '';
+            const titleLineUrl = findUrl(titleLine);
+            const nextLineUrl = findUrl(nextLine);
 
-            if (!urlLine) continue; // 沒網址就跳過
-
-            // 把「附件一」和後面的名稱拆開
-            const m = titleLine.match(/^(附件[一二三四五六七八九十]+)(.+)$/);
-            let code = '';
-            let name = '';
-
-            if (m) {
-                code = m[1].trim();   // e.g. 「附件一」
-                name = m[2].trim();   // e.g. 「第一季(1-3月)病歷書寫成績優良實習醫學生得獎者」
-            } else {
-                // 如果沒有符合這個格式，就用預設的附件代碼＋整行當名稱
-                code = formatAttachmentLabel(attachments.length);
-                name = titleLine.trim();
+            // 情境 1：名稱與網址在同一行（可能還有附件編號）
+            if (titleLineUrl && (!nextLineUrl || nextLineUrl === titleLineUrl)) {
+                const cleanedTitle = titleLine.replace(titleLineUrl, '').trim();
+                const { code, name } = parseTitle(cleanedTitle, attachments.length);
+                attachments.push({ code, name, url: titleLineUrl });
+                // 若網址在同一行，下一行不一定是網址，讓下一輪處理
+                if (!nextLineUrl) {
+                    i -= 1; // 下一輪從下一行開始
+                }
+                continue;
             }
 
-            attachments.push({ code, name, url: urlLine });
+            // 情境 2：上一行是標題，下一行是網址
+            if (nextLineUrl) {
+                const { code, name } = parseTitle(titleLine, attachments.length);
+                attachments.push({ code, name, url: nextLineUrl });
+                continue;
+            }
         }
 
         return attachments;
