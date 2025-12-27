@@ -721,10 +721,42 @@
                         return true;
                     }
                 }
+
+                // 檢查附件物件陣列（code/name/url）
+                const attachments = parseAttachments(data);
+                for (const attachment of attachments) {
+                    if (
+                        (attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) ||
+                        (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) ||
+                        (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))
+                    ) {
+                        return true;
+                    }
+                }
                 return false;
             }
 
             function parseAttachments(meeting) {
+                const fromStructured = Array.isArray(meeting.attachments)
+                    ? meeting.attachments
+                    : Array.isArray(meeting['附件'])
+                        ? meeting['附件']
+                        : null;
+
+                if (fromStructured) {
+                    const structuredAttachments = fromStructured
+                        .map(item => ({
+                            code: (item.code || item['附件代碼'] || '').trim(),
+                            name: (item.name || item['附件名稱'] || '').trim(),
+                            url: (item.url || item['附件網址'] || item.link || '').trim(),
+                        }))
+                        .filter(item => item.url);
+
+                    if (structuredAttachments.length > 0) {
+                        return structuredAttachments;
+                    }
+                }
+
                 const nameField = (meeting['附件名稱'] || '').trim();
                 if (!nameField && !(meeting['附件連結'] || meeting['附件URL'])) return [];
 
@@ -929,11 +961,15 @@
                                     const attachmentList = attachments.map((attachment, index) => {
                                         const safeUrl = attachment.url.replace(/'/g, "\\'");
                                         const attachmentLabel = formatAttachmentLabel(index);
-                                        const displayName = attachment.name ? ` ${highlightKeyword(attachment.name, keyword)}` : '';
+                                        const displayCode = attachment.code && attachment.code.trim()
+                                            ? attachment.code.trim()
+                                            : attachmentLabel;
+                                        const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
+                                        const titleLine = `${displayCode}${displayName}`;
                                         const displayUrl = highlightKeyword(attachment.url, keyword);
                                         return `
                                             <div class="leading-relaxed space-y-1">
-                                                <p class="font-semibold text-gray-800">${attachmentLabel}${displayName}</p>
+                                                <p class="font-semibold text-gray-800">${titleLine}</p>
                                                 <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
                                             </div>
                                         `;
