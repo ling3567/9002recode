@@ -735,8 +735,7 @@
                 }
                 return false;
             }
-
-            function parseAttachments(meeting) {
+function parseAttachments(meeting) {
     // 1️⃣ 若後端已經組好 attachments 陣列，就直接用（保留原有相容性）
     const fromStructured = Array.isArray(meeting.attachments)
         ? meeting.attachments
@@ -758,14 +757,18 @@
         }
     }
 
-    // 2️⃣ 試著抓「附件名稱」＋「附件連結」兩欄（如果你有分開兩欄）
-    const nameField = (meeting['附件名稱'] || '').trim();
+    // 2️⃣ 讀取欄位
+    const nameFieldRaw = (meeting['附件名稱'] || '').trim();
     const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim();
 
-    // 3️⃣ 第三種：像你貼的例子一樣，所有東西都塞在同一欄（通常欄名可能叫「附件」）
-    const singleFieldRaw = (meeting['附件'] || '').trim();
+    // 3️⃣「單一欄位模式」：
+    //    先看有沒有「附件」欄；如果沒有，但有「附件名稱」且沒有獨立連結欄位，
+    //    則把「附件名稱」視為：每兩行一組 → 標題一行 + URL 一行
+    let singleFieldRaw = (meeting['附件'] || '').trim();
+    if (!singleFieldRaw && nameFieldRaw && !linkFieldRaw) {
+        singleFieldRaw = nameFieldRaw;
+    }
 
-    // 如果有單一欄位（附件一＋名稱＋網址交錯在一起），優先用這個解析
     if (singleFieldRaw) {
         const lines = singleFieldRaw
             .split(/\r?\n/)
@@ -773,49 +776,57 @@
             .filter(Boolean);
 
         const attachments = [];
+
         const findUrl = (text) => {
             const match = text.match(/https?:\/\/\S+/);
             return match ? match[0] : '';
         };
+
         const parseTitle = (text, index) => {
+            // 例如：「附件一第一季(1-3月)病歷書寫成績優良實習醫學生得獎者」
             const m = text.match(/^(附件[一二三四五六七八九十]+)(.+)$/);
             if (m) {
                 return { code: m[1].trim(), name: m[2].trim() };
             }
+            // 沒有明確「附件一」字樣，就自己補一個附件代碼
             return { code: formatAttachmentLabel(index), name: text.trim() };
         };
 
         for (let i = 0; i < lines.length; i += 2) {
             const titleLine = lines[i] || '';
             const nextLine = lines[i + 1] || '';
+
             const titleLineUrl = findUrl(titleLine);
             const nextLineUrl = findUrl(nextLine);
 
-            // 情境 1：名稱與網址在同一行（可能還有附件編號）
+            // 情境 1：名稱與網址在同一行
             if (titleLineUrl && (!nextLineUrl || nextLineUrl === titleLineUrl)) {
                 const cleanedTitle = titleLine.replace(titleLineUrl, '').trim();
                 const { code, name } = parseTitle(cleanedTitle, attachments.length);
                 attachments.push({ code, name, url: titleLineUrl });
-                // 若網址在同一行，下一行不一定是網址，讓下一輪處理
+
+                // 如果下一行沒有額外網址，就讓下一輪從下一行開始
                 if (!nextLineUrl) {
-                    i -= 1; // 下一輪從下一行開始
+                    i -= 1;
                 }
                 continue;
             }
 
-            // 情境 2：上一行是標題，下一行是網址
+            // 情境 2：上一行是標題，下一行是網址（← 你現在的實際情況）
             if (nextLineUrl) {
                 const { code, name } = parseTitle(titleLine, attachments.length);
                 attachments.push({ code, name, url: nextLineUrl });
                 continue;
             }
+
+            // 若這一組沒有網址，就跳過
         }
 
         return attachments;
     }
 
-    // 若沒有單一欄位，就回到「附件名稱」＋「附件連結」各一欄的邏輯
-    if (!nameField && !linkFieldRaw) return [];
+    // 4️⃣ 若不是單一欄位模式，才回到「附件名稱」＋「附件連結」兩欄的處理
+    if (!nameFieldRaw && !linkFieldRaw) return [];
 
     const cleanAttachmentName = (name) => {
         const trimmed = (name || '').trim();
@@ -829,8 +840,8 @@
         return isInvalid ? '' : trimmed;
     };
 
-    const names = nameField
-        ? nameField
+    const names = nameFieldRaw
+        ? nameFieldRaw
             .split(/\r?\n/)
             .map(name => cleanAttachmentName(name))
         : [];
