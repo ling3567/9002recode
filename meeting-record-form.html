@@ -131,30 +131,18 @@
                 </div>
 
                 <!-- 肆、本次會議報告及討論事項 -->
-                <fieldset class="md:col-span-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <legend class="px-2 text-sm font-semibold text-gray-800">肆、本次會議報告及討論事項</legend>
-                    <p class="text-sm text-gray-600 mb-4">請依序填寫各獨立項目，便於閱讀與整理。</p>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="currentMeetingReport" class="block text-sm font-medium text-gray-700 mb-1">一、報告事項</label>
-                            <textarea id="currentMeetingReport" name="肆、本次會議報告及討論事項-一、報告事項" rows="3"
-                                      class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                      placeholder="請輸入本次會議需要報告的事項，逐項分行描述"></textarea>
-                        </div>
-                        <div>
-                            <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">二、討論議題</label>
-                            <textarea id="currentMeetingDiscussion" name="肆、本次會議報告及討論事項-二、討論議題" rows="3"
-                                      class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                      placeholder="請輸入需要討論的議題與重點，建議分段清楚標示"></textarea>
-                        </div>
-                        <div>
-                            <label for="currentMeetingConclusion" class="block text-sm font-medium text-gray-700 mb-1">三、決議與待辦</label>
-                            <textarea id="currentMeetingConclusion" name="肆、本次會議報告及討論事項-三、決議與待辦" rows="3"
-                                      class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                      placeholder="請輸入形成的決議、後續追蹤或待辦事項，分條列出"></textarea>
-                        </div>
-                    </div>
-                </fieldset>
+                <div class="md:col-span-2">
+                    <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">
+                        肆、本次會議報告及討論事項
+                    </label>
+                    <textarea
+                        id="currentMeetingDiscussion"
+                        name="肆、本次會議報告及討論事項"
+                        rows="3"
+                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="請輸入本次會議的報告重點、討論內容與決議，建議分條列出">
+                    </textarea>
+                </div>
 
                 <!-- 伍、臨時動議 -->
                 <div class="md:col-span-2">
