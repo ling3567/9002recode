@@ -1023,7 +1023,13 @@ function parseAttachments(meeting) {
                                 });
 
                                 const attachments = parseAttachments(meeting);
-                                if (attachments.length > 0) {
+                                const shouldDisplayAttachments = !isKeywordSearch || attachments.some(attachment => (
+                                    (attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) ||
+                                    (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) ||
+                                    (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))
+                                ));
+
+                                if (attachments.length > 0 && shouldDisplayAttachments) {
                                     const attachmentId = `attachments-${meeting.rowIndex}`;
                                     const attachmentList = attachments.map((attachment, index) => {
                                         const safeUrl = attachment.url.replace(/'/g, "\\'");
