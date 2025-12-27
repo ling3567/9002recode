@@ -1031,15 +1031,11 @@ function parseAttachments(meeting) {
         ? attachment.code.trim()
         : attachmentLabel;
     const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
-
-    // 中間加 2 個「不會被吃掉」的空格（&nbsp;&nbsp;）
-    const titleLine = `${displayCode}&nbsp;&nbsp;${displayName}`;
-
+    const titleLine = `${displayCode}${displayName}`;
     const displayUrl = highlightKeyword(attachment.url, keyword);
     return `
         <div class="leading-relaxed space-y-1">
-            <!-- 拿掉 font-semibold，就不會變粗體 -->
-            <p class="text-gray-800">${titleLine}</p>
+            <p class="font-semibold text-gray-800">${titleLine}</p>
             <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
         </div>
     `;
