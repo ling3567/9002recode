@@ -1257,19 +1257,48 @@ function parseAttachments(meeting) {
                 loginModal.classList.remove('flex');
             });
 
-            loginButton.addEventListener('click', () => {
-                const username = usernameInput.value;
-                const password = passwordInput.value;
+            loginButton.addEventListener('click', async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value.trim();
 
-                // 簡單的密碼驗證
-                if (username === 'cmh9002' && password === 'cmh9002') {
-                    loginMessage.classList.add('hidden');
-                    loginModal.classList.add('hidden');
-                    loginModal.classList.remove('flex');
-                    const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL;
-                    window.location.href = targetUrl; // 前往目標頁面
-                } else {
-                    loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
+                if (!username || !password) {
+                    loginMessage.textContent = '請輸入帳號與密碼。';
+                    loginMessage.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams();
+                    params.append('action', 'login');
+                    params.append('username', username);
+                    params.append('password', password);
+
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        },
+                        body: params.toString(),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 登入成功：關閉登入視窗，導向目標頁面
+                        loginMessage.classList.add('hidden');
+                        loginModal.classList.add('hidden');
+                        loginModal.classList.remove('flex');
+
+                        const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL;
+                        window.location.href = targetUrl;
+                    } else {
+                        // 帳號或密碼錯誤
+                        loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。';
+                        loginMessage.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('登入時發生錯誤：', error);
+                    loginMessage.textContent = '登入時發生錯誤，請稍後再試。';
                     loginMessage.classList.remove('hidden');
                 }
             });
