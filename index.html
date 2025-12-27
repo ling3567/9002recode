@@ -1032,11 +1032,10 @@ function parseAttachments(meeting) {
                                             ? attachment.code.trim()
                                             : attachmentLabel;
                                         const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
-                                        const titleLine = `${displayCode}${displayName}`;
                                         const displayUrl = highlightKeyword(attachment.url, keyword);
                                         return `
                                             <div class="leading-relaxed space-y-1">
-                                                <p class="font-semibold text-gray-800">${titleLine}</p>
+                                                <p class="text-gray-800">${displayCode}&nbsp;&nbsp;${displayName}</p>
                                                 <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a>
                                             </div>
                                         `;
