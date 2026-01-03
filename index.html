@@ -345,41 +345,19 @@
 
             function updateMonthNav(year, availableMonths = new Set()) {
                 if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
-
+                
                 const yearToDisplay = year || getDefaultRocYear();
                 currentNavYear = yearToDisplay;
                 monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
-
+                
                 monthQuickNavButtons.querySelectorAll('button').forEach(button => {
-                    const month = button.dataset.month;
-
-                    // 還原預設樣式
-                    button.classList.remove(
-                        'bg-gray-200',
-                        'text-gray-500',
-                        'opacity-60',
-                        'cursor-not-allowed'
-                    );
-                    button.classList.add('bg-white', 'text-blue-700');
-
-                    // 預設不要提示
-                    button.removeAttribute('title');
-
+                    // 始終保持啟用
+                    button.disabled = false;
                     const yearLabel = button.querySelector('[data-role="year-label"]');
                     if (yearLabel) {
                         yearLabel.textContent = `${yearToDisplay} 年`;
                     }
-
-                    // 若該月份沒有會議 → 改為灰色 + 顯示提示（仍可點擊）
-                    if (!availableMonths.has(month)) {
-                        button.classList.remove('bg-white', 'text-blue-700');
-                        button.classList.add('bg-gray-200', 'text-gray-500');
-
-                        // 加入滑鼠提示
-                        button.setAttribute('title', '本月未召開會議');
-                    }
                 });
-
                 updateYearNavButtons();
             }
 
