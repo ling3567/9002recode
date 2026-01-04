@@ -350,10 +350,13 @@
                 currentNavYear = yearToDisplay;
                 monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
 
+                // 判斷這一年有沒有任何會議資料
+                const hasDataForYear = availableMonths && availableMonths.size > 0;
+
                 monthQuickNavButtons.querySelectorAll('button').forEach(button => {
                     const month = button.dataset.month;
 
-                    // 還原預設樣式
+                    // 還原成預設樣式（代表「有會議或未知」的狀態）
                     button.classList.remove(
                         'bg-gray-200',
                         'text-gray-500',
@@ -362,20 +365,24 @@
                     );
                     button.classList.add('bg-white', 'text-blue-700');
 
-                    // 預設不要提示
+                    // 不管怎樣，月份按鈕都要可點擊
+                    button.disabled = false;
+
+                    // 清除舊的提示文字
                     button.removeAttribute('title');
 
+                    // 更新上面的年份小字
                     const yearLabel = button.querySelector('[data-role="year-label"]');
                     if (yearLabel) {
                         yearLabel.textContent = `${yearToDisplay} 年`;
                     }
 
-                    // 若該月份沒有會議 → 改為灰色 + 顯示提示（仍可點擊）
-                    if (!availableMonths.has(month)) {
+                    // 如果這一年有資料，才根據 availableMonths 決定哪些月份變灰
+                    if (hasDataForYear && !availableMonths.has(month)) {
                         button.classList.remove('bg-white', 'text-blue-700');
                         button.classList.add('bg-gray-200', 'text-gray-500');
 
-                        // 加入滑鼠提示
+                        // 滑鼠提示：本月未召開會議
                         button.setAttribute('title', '本月未召開會議');
                     }
                 });
