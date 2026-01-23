@@ -6,6 +6,9 @@
     <title>會議內容輸入/編輯</title>
     <!-- 引入 Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 TinyMCE (富文字編輯器) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+
     <style>
         /* 設定 Inter 字體 */
         body {
@@ -21,10 +24,14 @@
         #deleteConfirmModal.flex {
             display: flex; /* 顯示時變為 flex */
         }
+        /* 調整編輯器與 Tailwind 的相容性 */
+        .tox-tinymce {
+            border-radius: 0.375rem !important; /* rounded-md */
+            border-color: #d1d5db !important; /* border-gray-300 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
         <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
 
@@ -109,28 +116,25 @@
                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                 </div>
 
-                <!-- 壹、頒獎表揚 -->
+                <!-- 壹、頒獎表揚 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
-                    <textarea id="awards" name="壹、頒獎表揚" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="awards" name="壹、頒獎表揚" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 貳、主席報告 -->
+                <!-- 貳、主席報告 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
-                    <textarea id="chairmanReport" name="貳、主席報告" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="chairmanReport" name="貳、主席報告" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 參、上次會議追蹤事項 -->
+                <!-- 參、上次會議追蹤事項 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="lastMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">參、上次會議追蹤事項</label>
-                    <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 肆、本次會議報告及討論事項 -->
+                <!-- 肆、本次會議報告及討論事項 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">
                         肆、本次會議報告及討論事項
@@ -139,33 +143,30 @@
                         id="currentMeetingDiscussion"
                         name="肆、本次會議報告及討論事項"
                         rows="3"
-                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        class="rich-editor mt-1 block w-full shadow-sm"
                         placeholder="請輸入本次會議的報告重點、討論內容與決議，建議分條列出">
                     </textarea>
                 </div>
 
-                <!-- 伍、臨時動議 -->
+                <!-- 伍、臨時動議 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="adHocMotion" class="block text-sm font-medium text-gray-700 mb-1">伍、臨時動議</label>
-                    <textarea id="adHocMotion" name="伍、臨時動議" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="adHocMotion" name="伍、臨時動議" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 陸、下次會議追蹤事項 -->
+                <!-- 陸、下次會議追蹤事項 (富文字) -->
                 <div class="col-span-2">
                     <label for="nextMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">陸、下次會議追蹤事項</label>
-                    <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 柒、主席結論 -->
+                <!-- 柒、主席結論 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="chairmanConclusion" class="block text-sm font-medium text-gray-700 mb-1">柒、主席結論</label>
-                    <textarea id="chairmanConclusion" name="柒、主席結論" rows="3"
-                              class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    <textarea id="chairmanConclusion" name="柒、主席結論" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
-                <!-- 附件名稱 -->
+                <!-- 附件名稱 (保持純文字，因為格式較單純) -->
                 <div class="md:col-span-2">
                     <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件</label>
                     <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
@@ -219,13 +220,28 @@
         </div>
     </div>
 
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // *** 輔助函數定義 (移到 DOMContentLoaded 內部) ***
+
+            // *** 0. 初始化 TinyMCE 編輯器 ***
+            // 這是實現表格、圖片、顏色的關鍵
+            tinymce.init({
+                selector: '.rich-editor', // 選擇所有 class 為 rich-editor 的 textarea
+                language: 'zh_TW', // 如果瀏覽器不支援會自動切回英文
+                // *** 修正：使用更通用的 CDN 路徑，不鎖定特定版本號，以避免 404 錯誤 ***
+                // 注意：npm 套件路徑通常是 langs/zh_TW.js 而非 langs6/zh_TW.js
+                language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n/langs/zh_TW.js',
+                height: 300,
+                menubar: false,
+                plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
+                toolbar: 'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat | help',
+                branding: false, // 隱藏 TinyMCE 商標
+                promotion: false // 隱藏推廣訊息
+            });
+
+            // *** 輔助函數定義 ***
 
             // 顯示訊息的輔助函數
             function showMessage(text, type = 'info', duration = 3000) {
@@ -252,6 +268,24 @@
                 }
             }
 
+            // *** 重要：設定欄位值的通用函數 ***
+            // 這個函數會自動判斷該欄位是 TinyMCE 編輯器還是普通輸入框
+            function setFieldValue(id, value) {
+                const editor = tinymce.get(id); // 嘗試獲取編輯器實例
+                if (editor) {
+                    // *** 關鍵修正：確保段落顯示正確 ***
+                    // 如果值存在，且看起來像純文字（沒有 HTML 標籤），但有換行符號
+                    // 則將 \n 轉換為 <br>，避免在編輯器中顯示為單一行
+                    if (value && !/<[a-z][\s\S]*>/i.test(value) && value.includes('\n')) {
+                        value = value.replace(/\n/g, '<br>');
+                    }
+                    editor.setContent(value || ''); // 如果是編輯器，設定內容
+                } else {
+                    const el = document.getElementById(id); // 如果不是，獲取普通元素
+                    if (el) el.value = value || '';
+                }
+            }
+
             // 載入資料的函數
             async function loadMeetingData(rowIndex, url) {
                 const formTitle = document.getElementById('formTitle');
@@ -259,10 +293,10 @@
                 const rowIndexInput = document.getElementById('rowIndex');
                 const creationTimeInput = document.getElementById('creationTime');
                 const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
-                
+
                 formTitle.textContent = '編輯會議內容';
                 deleteButton.classList.remove('hidden');
-                showMessage('正在載入資料...', 'info', 0); // 顯示載入中，不自動隱藏
+                showMessage('正在載入資料...', 'info', 0);
 
                 try {
                     const fetchUrl = `${url}?action=getRecord&rowIndex=${rowIndex}`;
@@ -271,32 +305,34 @@
 
                     if (result.success && result.data) {
                         const data = result.data;
-                        document.getElementById('meetingName').value = data['會議名稱'] || '';
-                        document.getElementById('meetingDate').value = data['會議日期'] || '';
-                        document.getElementById('startTime').value = data['開始時間'] || '';
-                        document.getElementById('endTime').value = data['結束時間'] || '';
-                        document.getElementById('location').value = data['會議地點'] || '';
-                        document.getElementById('chairman').value = data['主席'] || '';
-                        document.getElementById('awards').value = data['壹、頒獎表揚'] || '';
-                        document.getElementById('chairmanReport').value = data['貳、主席報告'] || '';
-                        document.getElementById('lastMeetingFollowUp').value = data['參、上次會議追蹤事項'] || '';
-                        document.getElementById('currentMeetingDiscussion').value = data['肆、本次會議報告及討論事項'] || '';
-                        document.getElementById('adHocMotion').value = data['伍、臨時動議'] || '';
-                        document.getElementById('nextMeetingFollowUp').value = data['陸、下次會議追蹤事項'] || '';
-                        document.getElementById('chairmanConclusion').value = data['柒、主席結論'] || '';
-                        document.getElementById('attachmentName').value = data['附件名稱'] || '';
-                        
+                        // 使用 setFieldValue 來填入資料，支援富文字
+                        setFieldValue('meetingName', data['會議名稱']);
+                        setFieldValue('meetingDate', data['會議日期']);
+                        setFieldValue('startTime', data['開始時間']);
+                        setFieldValue('endTime', data['結束時間']);
+                        setFieldValue('location', data['會議地點']);
+                        setFieldValue('chairman', data['主席']);
+
+                        setFieldValue('awards', data['壹、頒獎表揚']);
+                        setFieldValue('chairmanReport', data['貳、主席報告']);
+                        setFieldValue('lastMeetingFollowUp', data['參、上次會議追蹤事項']);
+                        setFieldValue('currentMeetingDiscussion', data['肆、本次會議報告及討論事項']);
+                        setFieldValue('adHocMotion', data['伍、臨時動議']);
+                        setFieldValue('nextMeetingFollowUp', data['陸、下次會議追蹤事項']);
+                        setFieldValue('chairmanConclusion', data['柒、主席結論']);
+
+                        setFieldValue('attachmentName', data['附件名稱']);
+
                         // 建立時間使用舊資料
                         creationTimeInput.value = data['建立時間'] || '';
-                        
+
                         // 檢查是否為「未召開會議」
                         if (data['狀態'] === '未召開') {
                             noMeetingCheckbox.checked = true;
-                            // 手動觸發 change 事件來隱藏欄位
                             noMeetingCheckbox.dispatchEvent(new Event('change'));
                         }
 
-                        rowIndexInput.value = rowIndex; // Store the row index
+                        rowIndexInput.value = rowIndex;
                         showMessage('資料載入成功！', 'success');
                     } else {
                         showMessage('載入資料失敗: ' + (result.message || '未知錯誤'), 'error');
@@ -313,7 +349,10 @@
                 const form = document.getElementById('meetingForm');
                 const rowIndexInput = document.getElementById('rowIndex');
                 const creationTimeInput = document.getElementById('creationTime');
-                
+
+                // *** 關鍵：提交前將 TinyMCE 的內容同步回 textarea ***
+                tinymce.triggerSave();
+
                 showMessage('正在提交資料中，請稍候...', 'info', 0);
 
                 const formData = new FormData(form);
@@ -321,8 +360,7 @@
                 for (let [key, value] of formData.entries()) {
                     meetingData[key] = value;
                 }
-                
-                // 如果 "未召開" 沒被勾選，FormData 不會包含它，所以手動補上空值
+
                 if (!meetingData['狀態']) {
                     meetingData['狀態'] = '';
                 }
@@ -331,11 +369,9 @@
                 if (isUpdate) {
                     meetingData.action = 'updateRecord';
                     meetingData.rowIndex = rowIndexInput.value;
-                    // 在編輯模式下，建立時間保留舊值
                     meetingData['建立時間'] = creationTimeInput.value;
                 } else {
                     meetingData.action = 'addRecord';
-                    // 在新增模式下，建立時間使用當下值
                     const now = new Date();
                     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                     meetingData['建立時間'] = now.toISOString().slice(0, 16);
@@ -352,8 +388,13 @@
                     if (result.success) {
                         showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存！', 'success');
                         
+                        // *** 修正：加入 try-catch 防止在預覽環境下因為無法導航而報錯 ***
                         setTimeout(() => {
-                           window.location.href = 'index.html'; // 成功後跳轉回查詢頁面
+                           try {
+                               window.location.href = 'index.html'; 
+                           } catch (e) {
+                               console.warn('無法導航至 index.html (可能是預覽環境限制):', e);
+                           }
                         }, 2000);
 
                     } else {
@@ -370,17 +411,15 @@
                 const modal = document.getElementById('deleteConfirmModal');
                 const confirmBtn = document.getElementById('confirmDeleteButton');
                 const cancelBtn = document.getElementById('cancelDeleteButton');
-                
-                modal.classList.add('flex'); // 顯示
 
-                // 移除舊監聽器，避免重複綁定
+                modal.classList.add('flex');
+
                 const newConfirmBtn = confirmBtn.cloneNode(true);
                 confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
                 const newCancelBtn = cancelBtn.cloneNode(true);
                 cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
-                // 綁定新監聽器
                 newConfirmBtn.addEventListener('click', () => {
                     callback(true);
                     hideDeleteConfirm();
@@ -391,12 +430,10 @@
                 });
             }
 
-            // 隱藏自訂刪除確認視窗
             function hideDeleteConfirm() {
                 const modal = document.getElementById('deleteConfirmModal');
-                modal.classList.remove('flex'); // 隱藏
+                modal.classList.remove('flex');
             }
-
 
             // *** 元素獲取 ***
             const form = document.getElementById('meetingForm');
@@ -417,21 +454,15 @@
             // *** 頁面載入邏輯 ***
             const urlParams = new URLSearchParams(window.location.search);
             const editRowIndex = urlParams.get('editRow');
-            
+
             if (editRowIndex) {
-                // 編輯模式
                 loadMeetingData(editRowIndex, APPS_SCRIPT_WEB_APP_URL);
             } else {
-                // 新增模式，設定預設值
                 formTitle.textContent = '新增會議內容';
                 deleteButton.classList.add('hidden');
-                
-                // 設定預設建立時間
                 const now = new Date();
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                 creationTimeInput.value = now.toISOString().slice(0, 16);
-                
-                // 設定預設值
                 startTimeInput.value = '12:30';
                 document.getElementById('location').value = '第五醫療大樓五樓552會議室';
                 document.getElementById('chairman').value = '陳志成';
@@ -446,7 +477,7 @@
                     showMessage('請選擇一個檔案！', 'error');
                     return;
                 }
-                
+
                 parseFileButton.disabled = true;
                 parseFileButton.textContent = '解析中...';
                 showMessage('正在解析檔案...', 'info', 0);
@@ -456,7 +487,6 @@
                     const fileReader = new FileReader();
 
                     if (file.name.endsWith('.docx')) {
-                        // 使用 mammoth.js 讀取 .docx
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => {
                                 mammoth.extractRawText({ arrayBuffer: e.target.result })
@@ -467,50 +497,50 @@
                             fileReader.readAsArrayBuffer(file);
                         });
                     } else {
-                        // 讀取其他文本檔案 (如 .txt)
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => resolve(e.target.result);
                             fileReader.onerror = reject;
-                            fileReader.readAsText(file); // 讓瀏覽器自動偵測編碼
+                            fileReader.readAsText(file);
                         });
                     }
-                    
-                    // 呼叫 Apps Script 進行 AI 解析 (假設 action 為 'parseFileContent')
+
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                         method: 'POST',
                         body: new URLSearchParams({
-                            action: 'parseFileContent', // 確保 Apps Script 有這個 action
+                            action: 'parseFileContent',
                             fileContent: fileContent
                         })
                     });
-                    
+
                     if (!response.ok) {
                         throw new Error(`伺服器錯誤: ${response.statusText}`);
                     }
-                    
+
                     const result = await response.json();
 
                     if (result.success && result.data) {
-                        const parsedData = result.data; // 修正拼寫錯誤
-                        document.getElementById('meetingName').value = parsedData['會議名稱'] || '';
-                        document.getElementById('meetingDate').value = parsedData['會議日期'] || '';
-                        document.getElementById('startTime').value = parsedData['開始時間'] || '';
-                        document.getElementById('endTime').value = parsedData['結束時間'] || '';
-                        document.getElementById('location').value = parsedData['會議地點'] || '';
-                        document.getElementById('chairman').value = parsedData['主席'] || '';
-                        document.getElementById('awards').value = parsedData['壹、頒獎表揚'] || '';
-                        document.getElementById('chairmanReport').value = parsedData['貳、主席報告'] || '';
-                        document.getElementById('lastMeetingFollowUp').value = parsedData['參、上次會議追蹤事項'] || '';
-                        document.getElementById('currentMeetingDiscussion').value = parsedData['肆、本次會議報告及討論事項'] || '';
-                        document.getElementById('adHocMotion').value = parsedData['伍、臨時動議'] || '';
-                        document.getElementById('nextMeetingFollowUp').value = parsedData['陸、下次會議追蹤事項'] || '';
-                        document.getElementById('chairmanConclusion').value = parsedData['柒、主席結論'] || '';
-                        document.getElementById('attachmentName').value = parsedData['附件名稱'] || '';
-                        
+                        const parsedData = result.data;
+                        // 使用 setFieldValue 確保解析後的資料能填入富文字編輯器
+                        setFieldValue('meetingName', parsedData['會議名稱']);
+                        setFieldValue('meetingDate', parsedData['會議日期']);
+                        setFieldValue('startTime', parsedData['開始時間']);
+                        setFieldValue('endTime', parsedData['結束時間']);
+                        setFieldValue('location', parsedData['會議地點']);
+                        setFieldValue('chairman', parsedData['主席']);
+
+                        setFieldValue('awards', parsedData['壹、頒獎表揚']);
+                        setFieldValue('chairmanReport', parsedData['貳、主席報告']);
+                        setFieldValue('lastMeetingFollowUp', parsedData['參、上次會議追蹤事項']);
+                        setFieldValue('currentMeetingDiscussion', parsedData['肆、本次會議報告及討論事項']);
+                        setFieldValue('adHocMotion', parsedData['伍、臨時動議']);
+                        setFieldValue('nextMeetingFollowUp', parsedData['陸、下次會議追蹤事項']);
+                        setFieldValue('chairmanConclusion', parsedData['柒、主席結論']);
+
+                        setFieldValue('attachmentName', parsedData['附件名稱']);
+
                         showMessage('檔案解析成功，資料已填入表單！', 'success');
                     } else {
                         showMessage('解析失敗: ' + (result.message || '無法從檔案中解析到資料'), 'error');
-                        console.error('解析失敗的回應:', result);
                     }
                 } catch (error) {
                     showMessage('解析檔案時發生錯誤。請檢查檔案格式或控制台。', 'error');
@@ -521,20 +551,14 @@
                 }
             });
 
-            // 表單提交
             form.addEventListener('submit', (event) => {
                 submitForm(event, APPS_SCRIPT_WEB_APP_URL);
             });
 
-            // 刪除按鈕
             deleteButton.addEventListener('click', () => {
                 showDeleteConfirm(async (isConfirmed) => {
-                    if (!isConfirmed) {
-                        return;
-                    }
-
+                    if (!isConfirmed) return;
                     showMessage('正在刪除資料中...', 'info', 0);
-
                     try {
                         const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                             method: 'POST',
@@ -544,12 +568,18 @@
                             })
                         });
                         const result = await response.json();
-                        
                         if (result.success) {
                             showMessage('會議紀錄已成功刪除！', 'success');
+                            
+                            // *** 修正：加入 try-catch 防止在預覽環境下因為無法導航而報錯 ***
                             setTimeout(() => {
-                               window.location.href = 'index.html';
+                               try {
+                                   window.location.href = 'index.html';
+                               } catch (e) {
+                                   console.warn('無法導航至 index.html (可能是預覽環境限制):', e);
+                               }
                             }, 2000);
+
                         } else {
                             showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
                         }
@@ -560,16 +590,13 @@
                 });
             });
 
-            // "未召開會議" 勾選框
             noMeetingCheckbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     contentFields.classList.add('hidden');
-                    // 設為非必填
                     startTimeInput.required = false;
                     endTimeInput.required = false;
                 } else {
                     contentFields.classList.remove('hidden');
-                    // 恢復必填
                     startTimeInput.required = true;
                     endTimeInput.required = true;
                 }
