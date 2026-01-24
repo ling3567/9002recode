@@ -228,7 +228,7 @@
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
 
-            // *** 0. 初始化 TinyMCE 編輯器 (已修正設定) ***
+            // *** 0. 初始化 TinyMCE 編輯器 (已修正設定，匹配 index.html 樣式) ***
             tinymce.init({
                 selector: '.rich-editor', // 選擇所有 class 為 rich-editor 的 textarea
                 language: 'zh_TW',
@@ -241,17 +241,23 @@
                 entity_encoding: 'raw',
 
                 // *** 關鍵設定：停用圖片直接貼上 ***
-                // 這是為了保護 Google Sheet 不被過大的 Base64 字串塞爆
                 paste_data_images: false,
 
-                // *** 關鍵設定：編輯器內的 CSS 樣式 ***
+                // *** 關鍵設定：編輯器內的 CSS 樣式 (完全對照 index.html) ***
                 content_style: `
-                    body { font-family: Inter, sans-serif; font-size: 14px; color: #374151; }
-                    p { margin: 0; padding: 0; margin-bottom: 0.8em; } 
-                    ul, ol { margin-left: 1.5em; margin-bottom: 0.8em; }
-                    li { margin-bottom: 0.2em; }
-                    table { border-collapse: collapse; width: 100%; }
+                    body { font-family: 'Inter', sans-serif; font-size: 16px; color: #374151; line-height: 1.75; }
+                    p { margin: 0; padding: 0; margin-bottom: 4px; }
+                    strong { color: #1a202c; font-weight: 700; }
+                    ul, ol { margin: 0; padding: 0; }
+                    table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
                     table td, table th { border: 1px solid #ddd; padding: 8px; }
+                    
+                    /* index.html 的特殊縮排樣式 */
+                    .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
+                    .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
+                    .num-cn-1 { padding-left: 2em; text-indent: -2em; }
+                    .num-circle-1 { margin-left: 41px; padding-left: 10px; text-indent: -10px; }
+                    .num-alpha-1 { margin-left: 49px; padding-left: 8px; text-indent: -8px; }
                 `,
 
                 plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
@@ -287,18 +293,65 @@
                 }
             }
 
-            // *** 重要：設定欄位值的通用函數 ***
-            // 這個函數會自動判斷該欄位是 TinyMCE 編輯器還是普通輸入框
+            // *** 解碼 HTML 實體函數 ***
+            function decodeHtmlEntities(text) {
+                if (!text) return text;
+                const txt = document.createElement("textarea");
+                txt.innerHTML = text;
+                return txt.value;
+            }
+
+            // *** 格式化會議內容函數 (模擬 index.html 的邏輯) ***
+            // 讀取純文字時，自動為符合規則的段落加上 class，讓編輯器內能正確顯示縮排
+            function formatMeetingContent(text) {
+                if (!text) return '';
+
+                let formatted = decodeHtmlEntities(text);
+
+                // 如果已經是 HTML 原始碼 (包含標籤)，則假設已經格式化過，直接回傳
+                if (/<[a-z][\s\S]*>/i.test(formatted)) {
+                    return formatted;
+                }
+
+                // 如果是純文字，進行格式化
+                const lines = formatted.split('\n');
+                return lines.map(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return '<p><br></p>';
+
+                    let className = '';
+                    if (/^\(\d+\)/.test(trimmed)) {
+                        className = 'num-level-2';
+                    } else if (/^\d+\./.test(trimmed)) {
+                        className = 'num-level-1';
+                    } else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(trimmed)) {
+                        className = 'num-cn-1';
+                    } else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmed)) {
+                        className = 'num-circle-1';
+                    } else if (/^\s*[a-e]\./i.test(trimmed)) {
+                        className = 'num-alpha-1';
+                    }
+
+                    // 對應標題自動加粗 (模擬 index.html 的視覺)
+                    let content = line;
+                    if (className === 'num-cn-1') {
+                         content = content.replace(/^([一二三四五六七八九十]+、.*?[：:])/, '<strong>$1</strong>');
+                    }
+
+                    const classAttr = className ? ` class="${className}"` : '';
+                    return `<p${classAttr}>${content}</p>`;
+                }).join('');
+            }
+
+            // *** 重要：設定欄位值的通用函數 (已更新) ***
             function setFieldValue(id, value) {
                 const editor = tinymce.get(id); // 嘗試獲取編輯器實例
                 if (editor) {
-                    // *** 關鍵修正：確保段落顯示正確 ***
-                    if (value && !/<[a-z][\s\S]*>/i.test(value) && value.includes('\n')) {
-                        value = value.replace(/\n/g, '<br>');
-                    }
-                    editor.setContent(value || ''); // 如果是編輯器，設定內容
+                    // 套用格式化邏輯
+                    const formattedValue = formatMeetingContent(value);
+                    editor.setContent(formattedValue || ''); 
                 } else {
-                    const el = document.getElementById(id); // 如果不是，獲取普通元素
+                    const el = document.getElementById(id); 
                     if (el) el.value = value || '';
                 }
             }
@@ -322,7 +375,7 @@
 
                     if (result.success && result.data) {
                         const data = result.data;
-                        // 使用 setFieldValue 來填入資料，支援富文字
+                        // 使用 setFieldValue 來填入資料，支援富文字與自動格式化
                         setFieldValue('meetingName', data['會議名稱']);
                         setFieldValue('meetingDate', data['會議日期']);
                         setFieldValue('startTime', data['開始時間']);
