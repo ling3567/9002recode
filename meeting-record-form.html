@@ -141,7 +141,7 @@
                     <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">
                         肆、本次會議報告及討論事項
                     </label>
-                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)，請勿直接貼上圖片以免超過字數限制。</div>
+                    <div class="text-xs text-gray-500 mb-1">此欄位將自動套用卡片式排版。支援表格插入。圖片請使用連結 (URL)。</div>
                     <textarea
                         id="currentMeetingDiscussion"
                         name="肆、本次會議報告及討論事項"
@@ -228,32 +228,37 @@
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
 
-            // *** 0. 初始化 TinyMCE 編輯器 (同步 index.html 的縮排與視覺規則) ***
+            // *** 0. 初始化 TinyMCE 編輯器 ***
             tinymce.init({
-                selector: '.rich-editor', // 選擇所有 class 為 rich-editor 的 textarea
+                selector: '.rich-editor',
                 language: 'zh_TW',
                 language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n/langs/zh_TW.js',
                 height: 300,
                 menubar: false,
                 statusbar: false,
                 
-                // *** 關鍵設定：不轉義中文字，讓原始碼可讀 ***
                 entity_encoding: 'raw',
-
-                // *** 關鍵設定：停用圖片直接貼上，避免 Base64 塞爆 Sheet ***
                 paste_data_images: false,
 
-                // *** 關鍵設定：編輯器內的 CSS 樣式 (對照 index.html) ***
                 content_style: `
                     body { font-family: 'Inter', sans-serif; font-size: 16px; color: #374151; line-height: 1.75; }
-                    /* 設定段落下邊距，解決"擠在一起"或"間距過大"的問題 */
                     p { margin: 0; padding: 0; margin-bottom: 0.5em; }
                     strong { color: #1a202c; font-weight: 700; }
                     ul, ol { margin: 0; padding: 0; }
                     table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
                     table td, table th { border: 1px solid #ddd; padding: 8px; }
                     
-                    /* index.html 的特殊縮排樣式 (同步移植) */
+                    /* 模擬卡片樣式 (對應 "肆、" 區塊) */
+                    .editor-card {
+                        background-color: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 12px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    }
+                    
+                    /* 縮排樣式 */
                     .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
                     .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
                     .num-cn-1 { padding-left: 2em; text-indent: -2em; }
@@ -269,7 +274,6 @@
 
             // *** 輔助函數定義 ***
 
-            // 顯示訊息的輔助函數
             function showMessage(text, type = 'info', duration = 3000) {
                 const messageContainer = document.getElementById('messageContainer');
                 const messageText = document.getElementById('messageText');
@@ -294,7 +298,6 @@
                 }
             }
 
-            // *** 解碼 HTML 實體函數 ***
             function decodeHtmlEntities(text) {
                 if (!text) return text;
                 const txt = document.createElement("textarea");
@@ -302,57 +305,93 @@
                 return txt.value;
             }
 
-            // *** 格式化會議內容函數 (強化版：解決空行與區塊問題) ***
-            function formatMeetingContent(text) {
+            function formatMeetingContent(text, fieldId) {
                 if (!text) return '';
 
                 let formatted = decodeHtmlEntities(text);
 
-                // 1. 強力清洗：將各種 HTML 換行標籤統一轉為 \n，並移除多餘的容器標籤
+                // 1. 強力清洗
                 let raw = formatted
-                    .replace(/<br\s*\/?>/gi, '\n') // 將 <br> 轉為換行
-                    .replace(/<\/p>/gi, '\n')      // 將 </p> 轉為換行
-                    .replace(/<p[^>]*>/gi, '')     // 移除 <p> 開頭
-                    .replace(/<\/div>/gi, '\n')    // 移除 div
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/p>/gi, '\n')
+                    .replace(/<p[^>]*>/gi, '')
+                    .replace(/<\/div>/gi, '\n')
                     .replace(/<div[^>]*>/gi, '');
 
-                // 2. 切割並過濾空行：解決"多一行"的問題 (連續的 \n 會變成空字串被濾掉)
+                // 2. 切割並過濾空行
                 const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
-                
-                // 3. 重組為乾淨的 HTML，並套用 index.html 的邏輯
+
+                // 3. 處理 "肆" 區塊的卡片
+                if (fieldId === 'currentMeetingDiscussion') {
+                    const cards = [];
+                    let currentCardContent = [];
+                    const headerRegex = /^[一二三四五六七八九十]+、/;
+
+                    lines.forEach((line) => {
+                        if (headerRegex.test(line)) {
+                            if (currentCardContent.length > 0) {
+                                cards.push(createCardHtml(currentCardContent));
+                                currentCardContent = [];
+                            }
+                        }
+                        currentCardContent.push(line);
+                    });
+
+                    if (currentCardContent.length > 0) {
+                        cards.push(createCardHtml(currentCardContent));
+                    }
+
+                    if (cards.length === 0) {
+                        return lines.map(l => `<p>${l}</p>`).join('');
+                    }
+
+                    return cards.join('');
+                }
+
+                // 4. 其他欄位處理
                 return lines.map(line => {
                     let className = '';
-                    let content = line;
-
-                    // 偵測編號模式 (同步 index.html)
                     if (/^\(\d+\)/.test(line)) className = 'num-level-2';
                     else if (/^\d+\./.test(line)) className = 'num-level-1';
                     else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
                     else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
-                    
-                    // 偵測中文大標題 (一、 二、) -> 解決"區塊顯示"問題
-                    if (/^[一二三四五六七八九十]+、/.test(line)) {
-                        className = 'num-cn-1'; // 使用縮排樣式
-                        
-                        // 自動加粗：將「一、XXX：」這部分加粗，讓它看起來像標題區塊
-                        // Regex: 抓取 (中文數字+頓號+文字+冒號)
-                        content = content.replace(/^([一二三四五六七八九十]+、.*?[：:])?(.*)/, (match, p1, p2) => {
-                            if (p1) return `<strong>${p1}</strong>${p2}`; // 加粗標題部分
-                            return `<strong>${match}</strong>`; // 如果沒冒號，整行加粗
-                        });
-                    }
+                    else if (/^[一二三四五六七八九十]+、/.test(line)) className = 'num-cn-1';
 
                     const classAttr = className ? ` class="${className}"` : '';
-                    return `<p${classAttr}>${content}</p>`;
+                    return `<p${classAttr}>${line}</p>`;
                 }).join('');
             }
 
-            // *** 重要：設定欄位值的通用函數 (已更新) ***
+            function createCardHtml(lines) {
+                if (lines.length === 0) return '';
+                
+                let titleHtml = lines[0];
+                const headerRegex = /^([一二三四五六七八九十]+、.*?[：:])?(.*)/;
+                
+                if (/^[一二三四五六七八九十]+、/.test(titleHtml)) {
+                     titleHtml = titleHtml.replace(headerRegex, (match, p1, p2) => {
+                        if (p1) return `<strong>${p1}</strong>${p2}`; 
+                        return `<strong>${match}</strong>`; 
+                    });
+                }
+
+                const contentHtml = lines.slice(1).map(l => {
+                    let className = '';
+                    if (/^\(\d+\)/.test(l)) className = 'num-level-2';
+                    else if (/^\d+\./.test(l)) className = 'num-level-1';
+                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
+                    else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
+                    const classAttr = className ? ` class="${className}"` : '';
+                    return `<p${classAttr}>${l}</p>`;
+                }).join('');
+
+                return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
+            }
+
             function setFieldValue(id, value) {
-                const editor = tinymce.get(id); // 嘗試獲取編輯器實例
+                const editor = tinymce.get(id); 
                 if (editor) {
-                    // 使用強化版的格式化函數
-                    const formattedValue = formatMeetingContent(value);
+                    const formattedValue = formatMeetingContent(value, id);
                     editor.setContent(formattedValue || ''); 
                 } else {
                     const el = document.getElementById(id); 
@@ -360,7 +399,6 @@
                 }
             }
 
-            // 載入資料的函數
             async function loadMeetingData(rowIndex, url) {
                 const formTitle = document.getElementById('formTitle');
                 const deleteButton = document.getElementById('deleteButton');
@@ -379,7 +417,6 @@
 
                     if (result.success && result.data) {
                         const data = result.data;
-                        // 使用 setFieldValue 來填入資料，支援富文字與自動格式化
                         setFieldValue('meetingName', data['會議名稱']);
                         setFieldValue('meetingDate', data['會議日期']);
                         setFieldValue('startTime', data['開始時間']);
@@ -397,10 +434,8 @@
 
                         setFieldValue('attachmentName', data['附件名稱']);
 
-                        // 建立時間使用舊資料
                         creationTimeInput.value = data['建立時間'] || '';
 
-                        // 檢查是否為「未召開會議」
                         if (data['狀態'] === '未召開') {
                             noMeetingCheckbox.checked = true;
                             noMeetingCheckbox.dispatchEvent(new Event('change'));
@@ -417,14 +452,12 @@
                 }
             }
 
-            // 提交表單的函數
             async function submitForm(event, url) {
                 event.preventDefault();
                 const form = document.getElementById('meetingForm');
                 const rowIndexInput = document.getElementById('rowIndex');
                 const creationTimeInput = document.getElementById('creationTime');
 
-                // *** 關鍵：提交前將 TinyMCE 的內容同步回 textarea ***
                 tinymce.triggerSave();
 
                 showMessage('正在提交資料中，請稍候...', 'info', 0);
@@ -479,7 +512,6 @@
                 }
             }
 
-            // 顯示自訂刪除確認視窗
             function showDeleteConfirm(callback) {
                 const modal = document.getElementById('deleteConfirmModal');
                 const confirmBtn = document.getElementById('confirmDeleteButton');
@@ -508,7 +540,6 @@
                 modal.classList.remove('flex');
             }
 
-            // *** 元素獲取 ***
             const form = document.getElementById('meetingForm');
             const creationTimeInput = document.getElementById('creationTime');
             const startTimeInput = document.getElementById('startTime');
@@ -521,10 +552,8 @@
             const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
             const contentFields = document.getElementById('contentFields');
 
-            // Apps Script Web 應用程式 URL
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
 
-            // *** 頁面載入邏輯 ***
             const urlParams = new URLSearchParams(window.location.search);
             const editRowIndex = urlParams.get('editRow');
 
@@ -541,9 +570,7 @@
                 document.getElementById('chairman').value = '陳志成';
             }
 
-            // *** 事件監聽器 ***
-
-            // 檔案解析按鈕
+            // *** 重點修改：檔案解析邏輯 (深度清洗特殊字元 + 阻擋圖片轉碼) ***
             parseFileButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
@@ -562,8 +589,47 @@
                     if (file.name.endsWith('.docx')) {
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => {
-                                mammoth.extractRawText({ arrayBuffer: e.target.result })
-                                    .then(result => resolve(result.value))
+                                // *** 關鍵設定：阻擋圖片轉為 Base64，避免 Payload 過大 ***
+                                var options = {
+                                    convertImage: mammoth.images.imgElement(function(image) {
+                                        return Promise.resolve({ src: "" }); // 回傳空字串，丟棄圖片資料
+                                    })
+                                };
+                                
+                                mammoth.convertToHtml({ arrayBuffer: e.target.result }, options)
+                                    .then(result => {
+                                        let html = result.value;
+                                        
+                                        // 1. 基礎 HTML 結構整理
+                                        html = html.replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n\n'); 
+                                        html = html.replace(/<\/tr>/gi, '\n');
+                                        html = html.replace(/<\/(td|th)>/gi, '  '); 
+                                        html = html.replace(/<br\s*\/?>/gi, '\n');
+                                        
+                                        // 2. 移除所有 HTML 標籤
+                                        let text = html.replace(/<[^>]+>/g, '');
+                                        
+                                        // 3. 解碼 HTML 實體
+                                        const doc = new DOMParser().parseFromString(text, 'text/html');
+                                        text = doc.body.textContent || "";
+
+                                        // 4. *** 深度清洗：移除怪異控制字元 ***
+                                        // \x0b (Vertical Tab) is Word Shift+Enter
+                                        // 包含您提到的 ↵ 符號
+                                        text = text.replace(/[\x0b\f\u2028\u2029]/g, '\n');
+                                        
+                                        // 5. *** 針對使用者指定符號進行正規化 ***
+                                        text = text.replace(/≧/g, '>=');
+                                        text = text.replace(/→/g, '->');
+                                        
+                                        // 6. 正規化並切除行首空白
+                                        const lines = text.split(/\r\n|\r|\n/);
+                                        const cleanedLines = lines
+                                            .map(line => line.trim()) 
+                                            .filter(line => line.length > 0);
+
+                                        resolve(cleanedLines.join('\n'));
+                                    })
                                     .catch(reject);
                             };
                             fileReader.onerror = reject;
@@ -593,7 +659,6 @@
 
                     if (result.success && result.data) {
                         const parsedData = result.data;
-                        // 使用 setFieldValue 確保解析後的資料能填入富文字編輯器
                         setFieldValue('meetingName', parsedData['會議名稱']);
                         setFieldValue('meetingDate', parsedData['會議日期']);
                         setFieldValue('startTime', parsedData['開始時間']);
