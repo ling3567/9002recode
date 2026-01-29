@@ -228,7 +228,7 @@
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
 
-            // *** 0. 初始化 TinyMCE 編輯器 (已修正設定，匹配 index.html 樣式) ***
+            // *** 0. 初始化 TinyMCE 編輯器 (同步 index.html 的縮排與視覺規則) ***
             tinymce.init({
                 selector: '.rich-editor', // 選擇所有 class 為 rich-editor 的 textarea
                 language: 'zh_TW',
@@ -237,22 +237,23 @@
                 menubar: false,
                 statusbar: false,
                 
-                // *** 關鍵設定：不轉義中文字 ***
+                // *** 關鍵設定：不轉義中文字，讓原始碼可讀 ***
                 entity_encoding: 'raw',
 
-                // *** 關鍵設定：停用圖片直接貼上 ***
+                // *** 關鍵設定：停用圖片直接貼上，避免 Base64 塞爆 Sheet ***
                 paste_data_images: false,
 
-                // *** 關鍵設定：編輯器內的 CSS 樣式 (完全對照 index.html) ***
+                // *** 關鍵設定：編輯器內的 CSS 樣式 (對照 index.html) ***
                 content_style: `
                     body { font-family: 'Inter', sans-serif; font-size: 16px; color: #374151; line-height: 1.75; }
-                    p { margin: 0; padding: 0; margin-bottom: 4px; }
+                    /* 設定段落下邊距，解決"擠在一起"或"間距過大"的問題 */
+                    p { margin: 0; padding: 0; margin-bottom: 0.5em; }
                     strong { color: #1a202c; font-weight: 700; }
                     ul, ol { margin: 0; padding: 0; }
                     table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
                     table td, table th { border: 1px solid #ddd; padding: 8px; }
                     
-                    /* index.html 的特殊縮排樣式 */
+                    /* index.html 的特殊縮排樣式 (同步移植) */
                     .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
                     .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
                     .num-cn-1 { padding-left: 2em; text-indent: -2em; }
@@ -301,41 +302,44 @@
                 return txt.value;
             }
 
-            // *** 格式化會議內容函數 (模擬 index.html 的邏輯) ***
-            // 讀取純文字時，自動為符合規則的段落加上 class，讓編輯器內能正確顯示縮排
+            // *** 格式化會議內容函數 (強化版：解決空行與區塊問題) ***
             function formatMeetingContent(text) {
                 if (!text) return '';
 
                 let formatted = decodeHtmlEntities(text);
 
-                // 如果已經是 HTML 原始碼 (包含標籤)，則假設已經格式化過，直接回傳
-                if (/<[a-z][\s\S]*>/i.test(formatted)) {
-                    return formatted;
-                }
+                // 1. 強力清洗：將各種 HTML 換行標籤統一轉為 \n，並移除多餘的容器標籤
+                let raw = formatted
+                    .replace(/<br\s*\/?>/gi, '\n') // 將 <br> 轉為換行
+                    .replace(/<\/p>/gi, '\n')      // 將 </p> 轉為換行
+                    .replace(/<p[^>]*>/gi, '')     // 移除 <p> 開頭
+                    .replace(/<\/div>/gi, '\n')    // 移除 div
+                    .replace(/<div[^>]*>/gi, '');
 
-                // 如果是純文字，進行格式化
-                const lines = formatted.split('\n');
+                // 2. 切割並過濾空行：解決"多一行"的問題 (連續的 \n 會變成空字串被濾掉)
+                const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+                
+                // 3. 重組為乾淨的 HTML，並套用 index.html 的邏輯
                 return lines.map(line => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return '<p><br></p>';
-
                     let className = '';
-                    if (/^\(\d+\)/.test(trimmed)) {
-                        className = 'num-level-2';
-                    } else if (/^\d+\./.test(trimmed)) {
-                        className = 'num-level-1';
-                    } else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(trimmed)) {
-                        className = 'num-cn-1';
-                    } else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmed)) {
-                        className = 'num-circle-1';
-                    } else if (/^\s*[a-e]\./i.test(trimmed)) {
-                        className = 'num-alpha-1';
-                    }
-
-                    // 對應標題自動加粗 (模擬 index.html 的視覺)
                     let content = line;
-                    if (className === 'num-cn-1') {
-                         content = content.replace(/^([一二三四五六七八九十]+、.*?[：:])/, '<strong>$1</strong>');
+
+                    // 偵測編號模式 (同步 index.html)
+                    if (/^\(\d+\)/.test(line)) className = 'num-level-2';
+                    else if (/^\d+\./.test(line)) className = 'num-level-1';
+                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
+                    else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
+                    
+                    // 偵測中文大標題 (一、 二、) -> 解決"區塊顯示"問題
+                    if (/^[一二三四五六七八九十]+、/.test(line)) {
+                        className = 'num-cn-1'; // 使用縮排樣式
+                        
+                        // 自動加粗：將「一、XXX：」這部分加粗，讓它看起來像標題區塊
+                        // Regex: 抓取 (中文數字+頓號+文字+冒號)
+                        content = content.replace(/^([一二三四五六七八九十]+、.*?[：:])?(.*)/, (match, p1, p2) => {
+                            if (p1) return `<strong>${p1}</strong>${p2}`; // 加粗標題部分
+                            return `<strong>${match}</strong>`; // 如果沒冒號，整行加粗
+                        });
                     }
 
                     const classAttr = className ? ` class="${className}"` : '';
@@ -347,7 +351,7 @@
             function setFieldValue(id, value) {
                 const editor = tinymce.get(id); // 嘗試獲取編輯器實例
                 if (editor) {
-                    // 套用格式化邏輯
+                    // 使用強化版的格式化函數
                     const formattedValue = formatMeetingContent(value);
                     editor.setContent(formattedValue || ''); 
                 } else {
