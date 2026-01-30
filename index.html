@@ -3,854 +3,726 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>醫教會會議紀錄查詢</title>
+    <title>會議內容輸入/編輯</title>
     <!-- 引入 Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 TinyMCE (富文字編輯器) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+
     <style>
         /* 設定 Inter 字體 */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f9ff; /* 柔和的天空藍背景 */
+            background-color: #f3f4f6; /* 淺灰色背景 */
         }
-        /* 自定義滾動條樣式 */
-        .scrollable-content::-webkit-scrollbar {
-            width: 8px;
-        }
-        .scrollable-content::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .scrollable-content::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        .scrollable-content::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        /* 關鍵字高亮樣式 */
-        .highlight {
-            background-color: #fde68a; /* 淺黃色背景 */
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        /* 登入視窗背景 */
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999; /* 確保在最上層 */
-        }
-        /* 登入視窗內容 */
-        .modal-content {
-            z-index: 1000; /* 確保在最上層 */
-        }
-        /* 區塊內容隱藏/顯示動畫 */
-        .section-content {
-            max-height: 0; /* 預設收合 */
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out; /* 調整過渡時間 */
-        }
-        .section-content.expanded { /* 展開時使用這個類別 */
-            max-height: 9999px; /* 足夠大的值以顯示內容 */
-        }
-        /* 箭頭旋轉 */
-        .arrow-icon {
-            transition: transform 0.3s ease;
-            transform: rotate(0deg); /* 預設收合，箭頭向右 */
-        }
-        .arrow-icon.expanded { /* 展開時使用這個類別 */
-            transform: rotate(90deg); /* 展開時箭頭向下 */
-        }
-        /* 文件預覽模態視窗樣式 */
-        #documentViewerModal {
+        /* 自訂確認視窗樣式 */
+        #deleteConfirmModal {
             display: none; /* 預設隱藏 */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
         }
-        #documentViewerModal.flex {
+        #deleteConfirmModal.flex {
             display: flex; /* 顯示時變為 flex */
         }
-        .document-viewer-content {
-            background-color: white;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            height: 90%;
-            max-width: 1000px; /* 最大寬度 */
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-        .document-viewer-iframe {
-            flex-grow: 1; /* 讓 iframe 佔滿剩餘空間 */
-            border: none;
-            width: 100%;
-            height: 100%;
-        }
-        .document-viewer-close {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #4b5563; /* gray-600 */
-        }
-
-        /* 增加會議內容可讀性 */
-        .section-content, .section-content p {
-            font-size: 1rem !important; /* 16px - 覆蓋 Tailwind 的 text-sm */
-            line-height: 1.75 !important; /* 增加行距 */
-        }
-
-        /* 新版編輯器的卡片樣式 - 確保在查詢頁面也能正確顯示 */
-        .editor-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .editor-card p {
-            margin-bottom: 0.5em;
-        }
-        .editor-card strong {
-            color: #1a202c;
-            font-weight: 700;
-            font-size: 1.05em;
-        }
-
-        /* 舊版：肆、本次會議報告及討論事項 - 子區塊卡片樣式 (保留以相容舊資料) */
-        .sub-section-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            margin-left: 0;
-            padding: 1rem 1.25rem;   
-        }
-
-        /* 會議紀錄條列的懸掛縮排設定 */
-        .meeting-section {
-            line-height: 1.7;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 0 !important;
-            padding-left: 0.75rem !important;
-        }
-
-        .section-content {
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-        }
-
-        /* 通用縮排樣式 */
-        .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
-        .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
-        .num-cn-1 { padding-left: 2em; text-indent: -2em; }
-        .num-circle-1 { margin-left: 41px; padding-left: 10px; text-indent: -10px; }
-        .num-alpha-1 { margin-left: 49px; padding-left: 8px; text-indent: -8px; }
-
-        .meeting-section ol,
-        .meeting-section ul {
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-        }
-
-        /* 附件連結樣式 */
-        .attachment-link {
-            display: inline-flex;
-            align-items: center;
-            color: #2563eb; /* blue-600 */
-            font-weight: 500;
-            text-decoration: none;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background-color: #eff6ff; /* blue-50 */
-            border: 1px solid #bfdbfe; /* blue-200 */
-            transition: all 0.2s;
-            margin: 0 4px;
-        }
-        .attachment-link:hover {
-            background-color: #dbeafe; /* blue-100 */
-            color: #1d4ed8; /* blue-700 */
-            text-decoration: none;
-        }
-        .attachment-link svg {
-            margin-right: 4px;
-            width: 14px;
-            height: 14px;
-        }
-
-        /* 內文附件顯著標示 (藍色膠囊樣式) */
-        .inline-attachment-ref {
-            display: inline-flex;
-            align-items: center;
-            vertical-align: middle;
-            background-color: #dbeafe; /* blue-100 */
-            color: #1e40af; /* blue-800 */
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 9999px; /* 圓角膠囊 */
-            font-size: 0.9em;
-            text-decoration: none;
-            border: 1px solid #bfdbfe; /* blue-200 */
-            cursor: pointer;
-            margin: 0 2px;
-            transition: all 0.2s ease;
-        }
-        .inline-attachment-ref:hover {
-            background-color: #2563eb; /* blue-600 */
-            color: white;
-            border-color: #2563eb;
-            text-decoration: none;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        /* 修正：移除小圖示 */
-        .inline-attachment-ref::after {
-            content: none;
+        /* 調整編輯器與 Tailwind 的相容性 */
+        .tox-tinymce {
+            border-radius: 0.375rem !important; /* rounded-md */
+            border-color: #d1d5db !important; /* border-gray-300 */
         }
     </style>
 </head>
-<body class="bg-sky-50 flex flex-col items-center min-h-screen p-4">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
+        <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-6 text-center">新增會議內容</h1>
 
-    <!-- 修改：使用 button 並透過 JS 導航，避免 404 -->
-    <button type="button" id="addMeetingButton"
-       class="fixed top-4 right-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out text-base z-50 cursor-pointer">
-        新增會議內容
-    </button>
-
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8 mt-16 md:mt-4">
-        <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">醫學教育委員會會議紀錄查詢</h1>
-
-        <section id="monthQuickNav" class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
-            <div class="flex flex-col gap-4">
-                <div class="flex w-full items-center justify-between">
-                    <button id="prevYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
-                        <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <!-- 修改此處：標題在上，年份在下 -->
-                    <div class="flex flex-col items-center">
-                        <p class="text-xs tracking-wider text-blue-600 uppercase whitespace-nowrap">快速月份導覽</p>
-                        <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800 whitespace-nowrap">113 年</p>
-                    </div>
-                    <button id="nextYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
-                        <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
-                </div>
-                <!-- 月份按鈕 -->
-                <div id="monthQuickNavButtons" class="grid w-full grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-12"></div>
-            </div>
-        </section>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <input type="text" id="keywordInput" placeholder="輸入關鍵字查詢 (例如: 報告, 臨時動議)"
-                   class="col-span-1 md:col-span-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-
-            <div class="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-2">
-                <input type="date" id="startDateInput"
-                       class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                <input type="date" id="endDateInput"
-                       class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-1">
-                <button id="searchButton"
-                        class="flex-grow px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
-                    搜尋會議
-                </button>
-                <button id="clearButton"
-                        class="flex-grow px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-150 ease-in-out">
-                    清除條件
-                </button>
-                <button id="showAllButton"
-                        class="flex-grow px-6 py-2 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition duration-150 ease-in-out">
-                    顯示所有會議
+        <!-- 檔案解析區域 -->
+        <div class="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">上傳會議紀錄檔案並自動解析</h2>
+            <p class="text-sm text-gray-500 mb-4">請上傳文字檔 (.txt) 或 Word 檔 (.docx)，程式會嘗試自動解析並填入下方欄位。</p>
+            <div class="flex items-center space-x-4">
+                <input type="file" id="fileInput"
+                       class="flex-grow block w-full text-sm text-gray-500
+                       file:mr-4 file:py-2 file:px-4
+                       file:rounded-md file:border-0
+                       file:text-sm file:font-semibold
+                       file:bg-blue-50 file:text-blue-700
+                       hover:file:bg-blue-100"
+                       accept=".txt,.docx">
+                <button type="button" id="parseFileButton"
+                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out whitespace-nowrap disabled:opacity-50">
+                    解析檔案
                 </button>
             </div>
         </div>
+
+        <form id="meetingForm">
+            <input type="hidden" id="rowIndex" name="rowIndex">
+
+            <!-- 狀態：未召開會議 -->
+            <div class="mb-4 p-4 border border-yellow-300 rounded-md bg-yellow-50">
+                <div class="flex items-center">
+                    <input type="checkbox" id="noMeetingCheckbox" name="狀態" value="未召開"
+                           class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="noMeetingCheckbox" class="ml-3 block text-lg font-medium text-yellow-800">
+                        勾選此項，標記為「本月未召開會議」
+                    </label>
+                </div>
+                <p class="text-sm text-yellow-600 mt-2 ml-8">勾選後，僅需填寫會議名稱和日期即可提交，其他欄位將被隱藏。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 會議名稱 -->
+                <div>
+                    <label for="meetingName" class="block text-sm font-medium text-gray-700 mb-1">會議名稱</label>
+                    <input type="text" id="meetingName" name="會議名稱" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 會議日期 -->
+                <div>
+                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">會議日期</label>
+                    <input type="date" id="meetingDate" name="會議日期" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+
+            <!-- 可隱藏的內容欄位 -->
+            <div id="contentFields" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <!-- 開始時間 -->
+                <div>
+                    <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+                    <input type="time" id="startTime" name="開始時間" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 結束時間 -->
+                <div>
+                    <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+                    <input type="time" id="endTime" name="結束時間" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 會議地點 -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">會議地點</label>
+                    <input type="text" id="location" name="會議地點"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 主席 -->
+                <div>
+                    <label for="chairman" class="block text-sm font-medium text-gray-700 mb-1">主席</label>
+                    <input type="text" id="chairman" name="主席"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- 壹、頒獎表揚 (富文字) -->
+                <div class="md:col-span-2">
+                    <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
+                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)。</div>
+                    <textarea id="awards" name="壹、頒獎表揚" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 貳、主席報告 (富文字) -->
+                <div class="md:col-span-2">
+                    <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
+                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)。</div>
+                    <textarea id="chairmanReport" name="貳、主席報告" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 參、上次會議追蹤事項 (富文字) -->
+                <div class="md:col-span-2">
+                    <label for="lastMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">參、上次會議追蹤事項</label>
+                    <textarea id="lastMeetingFollowUp" name="參、上次會議追蹤事項" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 肆、本次會議報告及討論事項 (富文字) -->
+                <div class="md:col-span-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700">
+                            肆、本次會議報告及討論事項
+                        </label>
+                        <!-- 新增自動排版按鈕 -->
+                        <button type="button" onclick="manualFormatDiscussion()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition">
+                            🪄 自動排版 (轉為卡片)
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-500 mb-1">此欄位支援卡片式排版。若手動貼上文字，請點擊右上角「自動排版」按鈕。</div>
+                    <textarea
+                        id="currentMeetingDiscussion"
+                        name="肆、本次會議報告及討論事項"
+                        rows="3"
+                        class="rich-editor mt-1 block w-full shadow-sm"
+                        placeholder="請輸入本次會議的報告重點、討論內容與決議，建議分條列出">
+                    </textarea>
+                </div>
+
+                <!-- 伍、臨時動議 (富文字) -->
+                <div class="md:col-span-2">
+                    <label for="adHocMotion" class="block text-sm font-medium text-gray-700 mb-1">伍、臨時動議</label>
+                    <textarea id="adHocMotion" name="伍、臨時動議" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 陸、下次會議追蹤事項 (富文字) -->
+                <div class="col-span-2">
+                    <label for="nextMeetingFollowUp" class="block text-sm font-medium text-gray-700 mb-1">陸、下次會議追蹤事項</label>
+                    <textarea id="nextMeetingFollowUp" name="陸、下次會議追蹤事項" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 柒、主席結論 (富文字) -->
+                <div class="md:col-span-2">
+                    <label for="chairmanConclusion" class="block text-sm font-medium text-gray-700 mb-1">柒、主席結論</label>
+                    <textarea id="chairmanConclusion" name="柒、主席結論" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
+                </div>
+
+                <!-- 附件名稱 (保持純文字，因為格式較單純) -->
+                <div class="md:col-span-2">
+                    <label for="attachmentName" class="block text-sm font-medium text-gray-700 mb-1">附件</label>
+                    <textarea id="attachmentName" name="附件名稱" rows="3" placeholder="請輸入附件名稱和共用連結，每份附件一行，例如：&#10;附件一 文件名稱: https://docs.google.com/document/d/YOUR_DOC_ID/edit&#10;附件二 圖片說明: https://drive.google.com/file/d/ANOTHER_FILE_ID/view"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
+            </div> <!-- 結束 #contentFields -->
+
+            <!-- 建立時間 (自動填入) -->
+            <div class="mt-6">
+                <label for="creationTime" class="block text-sm font-medium text-gray-700 mb-1">建立時間</label>
+                <input type="datetime-local" id="creationTime" name="建立時間" readonly
+                       class="mt-1 block w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
+            </div>
+
+            <!-- 提交按鈕 -->
+            <div class="md:col-span-2 flex justify-center mt-6">
+                <button type="submit"
+                        class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    提交會議內容
+                </button>
+            </div>
+            <div class="md:col-span-2 flex justify-center mt-4">
+                <button type="button" id="deleteButton"
+                        class="hidden px-8 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    刪除會議紀錄
+                </button>
+            </div>
+        </form>
+
         <!-- 訊息顯示區塊 -->
-        <div id="messageContainer" class="mt-4 p-4 rounded-md hidden">
+        <div id="messageContainer" class="mt-6 p-4 rounded-md hidden">
             <p id="messageText" class="text-center"></p>
         </div>
     </div>
 
-    <div id="resultsContainer" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 flex-grow scrollable-content overflow-y-auto">
-        <p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>
-        <!-- 查詢結果將顯示在這裡 -->
-    </div>
-
-    <!-- 登入視窗 -->
-    <div id="loginModal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
+    <!-- 自訂刪除確認視窗 -->
+    <div id="deleteConfirmModal" class="fixed inset-0 items-center justify-center p-4 modal-overlay">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm modal-content relative">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">管理員登入</h2>
-            <div class="mb-4">
-                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">帳號</label>
-                <input type="text" id="username" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-            <div class="mb-6">
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
-                <input type="password" id="password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-            <p id="loginMessage" class="text-red-600 text-sm mb-4 hidden text-center"></p>
-            <div class="flex justify-end gap-3">
-                <button id="cancelLoginButton"
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">確定要刪除嗎？</h2>
+            <p class="text-gray-600 text-center mb-6">這個動作無法復原。請確認是否要永久刪除這筆會議紀錄。</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelDeleteButton"
                         class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
                     取消
                 </button>
-                <button id="loginButton"
-                        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
-                    登入
+                <button id="confirmDeleteButton"
+                        class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    確定刪除
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 文件預覽模態視窗 -->
-    <div id="documentViewerModal" class="flex-col">
-        <div class="document-viewer-content">
-            <button class="document-viewer-close" id="closeDocumentViewer">&times;</button>
-            <iframe id="documentViewerIframe" class="document-viewer-iframe"></iframe>
-        </div>
-    </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // 變數定義區
-            const keywordInput = document.getElementById('keywordInput');
-            const startDateInput = document.getElementById('startDateInput');
-            const endDateInput = document.getElementById('endDateInput');
-            const searchButton = document.getElementById('searchButton');
-            const clearButton = document.getElementById('clearButton');
-            const showAllButton = document.getElementById('showAllButton');
-            const resultsContainer = document.getElementById('resultsContainer');
-            const messageContainer = document.getElementById('messageContainer');
-            const messageText = document.getElementById('messageText');
-            let initialMessage = document.getElementById('initialMessage');
-            
-            // 年份導覽相關元素
-            const monthQuickNavYearLabel = document.getElementById('monthQuickNavYear');
-            const monthQuickNavButtons = document.getElementById('monthQuickNavButtons');
-            const prevYearButton = document.getElementById('prevYearButton');
-            const nextYearButton = document.getElementById('nextYearButton');
-            const monthButtonBaseClasses = 'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-center text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white';
-            
-            // 登入功能相關元素
-            const addMeetingButton = document.getElementById('addMeetingButton');
-            const loginModal = document.getElementById('loginModal');
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            const loginButton = document.getElementById('loginButton');
-            const cancelLoginButton = document.getElementById('cancelLoginButton');
-            const loginMessage = document.getElementById('loginMessage');
-
-            // 文件預覽模態視窗元素
-            const documentViewerModal = document.getElementById('documentViewerModal');
-            const documentViewerIframe = document.getElementById('documentViewerIframe');
-            const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
-
-            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
-            const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
-
-            let currentNavYear = getDefaultRocYear() < 113 ? 113 : getDefaultRocYear(); 
-            
-            // --- 年份導覽邏輯 ---
-            function getDefaultRocYear() {
-                const now = new Date();
-                const rocYear = now.getFullYear() - 1911;
-                return rocYear > 0 ? rocYear : now.getFullYear(); 
-            }
-
-            function updateYearNavButtons() {
-                const now = new Date();
-                const currentAdYear = now.getFullYear();
-                const currentRocYear = currentAdYear - 1911;
+        // *** 全域輔助函數：手動觸發排版 (新增清洗邏輯) ***
+        window.manualFormatDiscussion = function() {
+            const editor = tinymce.get('currentMeetingDiscussion');
+            if (editor) {
+                // 1. 取得目前內容 (可能是 HTML 或純文字)
+                let content = editor.getContent({format: 'text'}); 
                 
-                nextYearButton.disabled = currentNavYear >= currentRocYear;
-                prevYearButton.disabled = currentNavYear <= 113; 
+                // *** 關鍵修正：如果使用者貼上了原始碼 (如 <p>一、...)，這裡將其還原為純文字 ***
+                if (content.includes('<p>') || content.includes('&lt;p&gt;')) {
+                    // 建立一個臨時 div 來解碼 HTML 實體
+                    const temp = document.createElement('div');
+                    temp.innerHTML = content;
+                    content = temp.textContent || temp.innerText || "";
+                    // 再次確保移除所有殘留標籤
+                    content = content.replace(/<[^>]+>/g, '\n');
+                }
+
+                if (!content.trim()) return;
+
+                // 2. 重新執行格式化邏輯
+                const formattedHtml = formatMeetingContent(content, 'currentMeetingDiscussion');
+                editor.setContent(formattedHtml);
             }
+        };
 
-            // ... (createMonthButtons, updateMonthNav logic remains same) ...
-            function createMonthButtons(year) {
-                if (!monthQuickNavButtons) return;
-                monthQuickNavButtons.innerHTML = '';
-                const months = Array.from({ length: 12 }, (_, index) => index + 1);
+        // *** 格式化函數定義 ***
+        function decodeHtmlEntities(text) {
+            if (!text) return text;
+            const txt = document.createElement("textarea");
+            txt.innerHTML = text;
+            return txt.value;
+        }
 
-                months.forEach(month => {
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.dataset.month = String(month).padStart(2, '0');
-                    button.className = monthButtonBaseClasses;
-                    button.innerHTML = `
-                        <span class="block text-xs text-blue-600 whitespace-nowrap" data-role="year-label">${year} 年</span>
-                        <span class="block text-sm font-semibold text-blue-800 whitespace-nowrap">${month} 月</span>
-                    `;
-                    button.addEventListener('click', handleMonthClick);
-                    monthQuickNavButtons.appendChild(button);
+        // *** 新增：日期格式化函數 ***
+        function formatDateForInput(dateVal) {
+            if (!dateVal) return '';
+            const date = new Date(dateVal);
+            if (isNaN(date.getTime())) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // *** 新增：時間格式化函數 ***
+        function formatTimeForInput(timeVal) {
+            if (!timeVal) return '';
+            if (typeof timeVal === 'string' && timeVal.includes(':')) {
+                const match = timeVal.match(/([0-9]{1,2}):([0-9]{2})/);
+                if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+            }
+            const date = new Date(timeVal);
+            if (!isNaN(date.getTime())) {
+                 const hours = String(date.getHours()).padStart(2, '0');
+                 const minutes = String(date.getMinutes()).padStart(2, '0');
+                 return `${hours}:${minutes}`;
+            }
+            const isoDate = new Date(`1970-01-01T${timeVal}`);
+            if (!isNaN(isoDate.getTime())) {
+                 const hours = String(isoDate.getHours()).padStart(2, '0');
+                 const minutes = String(isoDate.getMinutes()).padStart(2, '0');
+                 return `${hours}:${minutes}`;
+            }
+            return '';
+        }
+
+        function createCardHtml(lines) {
+            if (lines.length === 0) return '';
+            let titleHtml = lines[0];
+            const headerRegex = /^([一二三四五六七八九十]+、.*?[：:])?(.*)/;
+            if (/^[一二三四五六七八九十]+、/.test(titleHtml)) {
+                    titleHtml = titleHtml.replace(headerRegex, (match, p1, p2) => {
+                    if (p1) return `<strong>${p1}</strong>${p2}`; 
+                    return `<strong>${match}</strong>`; 
                 });
             }
+            const contentHtml = lines.slice(1).map(l => {
+                let className = '';
+                if (/^\(\d+\)/.test(l)) className = 'num-level-2';
+                else if (/^\d+\./.test(l)) className = 'num-level-1';
+                else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
+                else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
+                const classAttr = className ? ` class="${className}"` : '';
+                return `<p${classAttr}>${l}</p>`;
+            }).join('');
+            return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
+        }
 
-            function updateMonthNav(year, availableMonths = new Set()) {
-                if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
-                const yearToDisplay = year || 113; 
-                currentNavYear = yearToDisplay;
-                monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
-                monthQuickNavButtons.querySelectorAll('button').forEach(button => {
-                    button.disabled = false;
-                    const yearLabel = button.querySelector('[data-role="year-label"]');
-                    if (yearLabel) yearLabel.textContent = `${yearToDisplay} 年`;
+        function formatMeetingContent(text, fieldId) {
+            if (!text) return '';
+            let formatted = decodeHtmlEntities(text);
+            let raw = formatted
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<p[^>]*>/gi, '')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<div[^>]*>/gi, '');
+            const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+
+            if (fieldId === 'currentMeetingDiscussion') {
+                const cards = [];
+                let currentCardContent = [];
+                const headerRegex = /^[一二三四五六七八九十]+、/;
+                lines.forEach((line) => {
+                    if (headerRegex.test(line)) {
+                        if (currentCardContent.length > 0) {
+                            cards.push(createCardHtml(currentCardContent));
+                            currentCardContent = [];
+                        }
+                    }
+                    currentCardContent.push(line);
                 });
-                updateYearNavButtons();
+                if (currentCardContent.length > 0) {
+                    cards.push(createCardHtml(currentCardContent));
+                }
+                if (cards.length === 0) return lines.map(l => `<p>${l}</p>`).join('');
+                return cards.join('');
             }
 
-            prevYearButton.addEventListener('click', () => { updateMonthNav(currentNavYear - 1); createMonthButtons(currentNavYear); });
-            nextYearButton.addEventListener('click', () => { updateMonthNav(currentNavYear + 1); createMonthButtons(currentNavYear); });
+            return lines.map(line => {
+                let className = '';
+                if (/^\(\d+\)/.test(line)) className = 'num-level-2';
+                else if (/^\d+\./.test(line)) className = 'num-level-1';
+                else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
+                else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
+                else if (/^[一二三四五六七八九十]+、/.test(line)) className = 'num-cn-1';
+                const classAttr = className ? ` class="${className}"` : '';
+                return `<p${classAttr}>${line}</p>`;
+            }).join('');
+        }
 
-            // ... (Helper functions...)
-            function showMessage(text, type = 'info') {
+        // *** 章節正規化函數 (解決 11306 問題) ***
+        function normalizeMeetingText(text) {
+            if (!text) return "";
+            let normalized = text;
+            
+            // 偵測舊版結構特徵 (11306)
+            if (normalized.includes("壹、主席報告") && normalized.includes("參、本次會議報告及討論事項")) {
+                console.log("Detected 11306 format, normalizing...");
+                
+                // 使用唯一暫存字串避免重複取代
+                normalized = normalized.replace(/柒、\s*散會/g, "####TEMP_8####");
+                normalized = normalized.replace(/陸、\s*主席結論/g, "####TEMP_7####");
+                normalized = normalized.replace(/伍、\s*下次會議/g, "####TEMP_6####");
+                normalized = normalized.replace(/肆、\s*臨時動議/g, "####TEMP_5####");
+                normalized = normalized.replace(/參、\s*本次會議/g, "####TEMP_4####");
+                normalized = normalized.replace(/貳、\s*上次會議/g, "####TEMP_3####");
+                normalized = normalized.replace(/壹、\s*主席報告/g, "####TEMP_2####");
+                
+                // 還原為新版標題
+                normalized = normalized.replace("####TEMP_8####", "捌、散會");
+                normalized = normalized.replace("####TEMP_7####", "柒、主席結論");
+                normalized = normalized.replace("####TEMP_6####", "陸、下次會議追蹤事項");
+                normalized = normalized.replace("####TEMP_5####", "伍、臨時動議");
+                normalized = normalized.replace("####TEMP_4####", "肆、本次會議報告及討論事項");
+                normalized = normalized.replace("####TEMP_3####", "參、上次會議追蹤事項");
+                normalized = normalized.replace("####TEMP_2####", "貳、主席報告");
+            }
+            return normalized;
+        }
+
+        // *** DOMContentLoaded ***
+        document.addEventListener('DOMContentLoaded', () => {
+
+            tinymce.init({
+                selector: '.rich-editor',
+                language: 'zh_TW',
+                language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n/langs/zh_TW.js',
+                height: 300,
+                menubar: false,
+                statusbar: false,
+                entity_encoding: 'raw',
+                paste_data_images: false,
+                content_style: `
+                    body { font-family: 'Inter', sans-serif; font-size: 16px; color: #374151; line-height: 1.75; }
+                    p { margin: 0; padding: 0; margin-bottom: 0.5em; }
+                    strong { color: #1a202c; font-weight: 700; }
+                    ul, ol { margin: 0; padding: 0; }
+                    table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+                    table td, table th { border: 1px solid #ddd; padding: 8px; }
+                    .editor-card {
+                        background-color: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 12px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    }
+                    .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
+                    .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
+                    .num-cn-1 { padding-left: 2em; text-indent: -2em; }
+                    .num-circle-1 { margin-left: 41px; padding-left: 10px; text-indent: -10px; }
+                    .num-alpha-1 { margin-left: 49px; padding-left: 8px; text-indent: -8px; }
+                `,
+                plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
+                toolbar: 'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat | help',
+                branding: false,
+                promotion: false
+            });
+
+            function showMessage(text, type = 'info', duration = 3000) {
+                const messageContainer = document.getElementById('messageContainer');
+                const messageText = document.getElementById('messageText');
+                if (!messageContainer || !messageText) return;
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
-                if (type === 'success') { messageContainer.classList.add('bg-green-100', 'text-green-800'); } 
-                else if (type === 'error') { messageContainer.classList.add('bg-red-100', 'text-red-800'); } 
-                else { messageContainer.classList.add('bg-blue-100', 'text-blue-800'); }
+                if (type === 'success') { messageContainer.classList.add('bg-green-100', 'text-green-800'); } else if (type === 'error') { messageContainer.classList.add('bg-red-100', 'text-red-800'); } else { messageContainer.classList.add('bg-blue-100', 'text-blue-800'); }
                 messageContainer.classList.remove('hidden');
-                setTimeout(() => { messageContainer.classList.add('hidden'); }, 3000);
+                if (duration > 0) { setTimeout(() => { messageContainer.classList.add('hidden'); }, duration); }
             }
 
-            function highlightKeyword(text, keyword) {
-                if (!keyword || !text) return text;
-                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(escapedKeyword, 'gi');
-                return text.replace(regex, match => `<span class="highlight">${match}</span>`);
-            }
-
-            function highlightKeywordInHTML(html, keyword) {
-                if (!keyword) return html;
-                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(${escapedKeyword})(?![^<]*>)`, 'gi'); 
-                return html.replace(regex, '<span class="highlight">$1</span>');
-            }
-
-            function highlightTextInElement(element, keyword) {
-                if (!keyword || !element) return;
-                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(escapedKeyword, 'gi');
-                const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-                const textNodes = [];
-                let node;
-                while(node = walker.nextNode()) { textNodes.push(node); }
-                textNodes.forEach(textNode => {
-                    const text = textNode.nodeValue;
-                    if (regex.test(text)) {
-                        const fragment = document.createDocumentFragment();
-                        let lastIdx = 0;
-                        text.replace(regex, (match, idx) => {
-                            fragment.appendChild(document.createTextNode(text.substring(lastIdx, idx)));
-                            const span = document.createElement('span');
-                            span.className = 'highlight';
-                            span.textContent = match;
-                            fragment.appendChild(span);
-                            lastIdx = idx + match.length;
-                            return match;
-                        });
-                        fragment.appendChild(document.createTextNode(text.substring(lastIdx)));
-                        textNode.parentNode.replaceChild(fragment, textNode);
-                    }
-                });
-            }
-
-            function filterAndHighlightHTML(htmlContent, keyword) {
-                if (!htmlContent) return '';
-                if (!keyword) return htmlContent;
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = htmlContent;
-                const nodes = Array.from(wrapper.childNodes);
-                let hasVisibleContent = false;
-                nodes.forEach(node => {
-                    const text = node.textContent || '';
-                    const matches = text.toLowerCase().includes(keyword.toLowerCase());
-                    if (matches) {
-                        hasVisibleContent = true;
-                        if (node.nodeType === 1) { highlightTextInElement(node, keyword); } 
-                        else if (node.nodeType === 3) { 
-                             const span = document.createElement('span');
-                             span.innerHTML = highlightKeywordInHTML(node.nodeValue, keyword);
-                             node.parentNode.replaceChild(span, node);
-                        }
-                    } else { node.remove(); }
-                });
-                if (!hasVisibleContent || wrapper.innerHTML.trim() === '') return '';
-                return wrapper.innerHTML;
-            }
-
-            function handleMonthClick(event) {
-                const button = event.currentTarget;
-                const month = button.dataset.month;
-                const year = currentNavYear;
-                const rocYear = year; 
-                const adYear = rocYear + 1911;
-                const startDate = `${adYear}-${month}-01`;
-                const endDate = new Date(adYear, month, 0); 
-                const formattedEndDate = `${adYear}-${month}-${String(endDate.getDate()).padStart(2, '0')}`;
-                startDateInput.value = startDate;
-                endDateInput.value = formattedEndDate;
-                keywordInput.value = '';
-                performSearch('', startDate, formattedEndDate, false);
-            }
-            function toRocYear(date) { if (!(date instanceof Date) || isNaN(date.getTime())) return null; const rocYear = date.getFullYear() - 1911; return rocYear > 0 ? rocYear : null; }
-            function parseMeetingDate(rawDate) { if (!rawDate) return null; if (rawDate instanceof Date) { return isNaN(rawDate.getTime()) ? null : rawDate; } const normalized = rawDate.toString().trim().replace(/[年月]/g, '/').replace(/日/g, '').replace(/-/g, '/').replace(/\./g, '/'); const parts = normalized.split(/[\/]/).filter(Boolean); if (parts.length >= 3) { let year = parseInt(parts[0], 10); const month = parseInt(parts[1], 10); const day = parseInt(parts[2], 10); if (!isNaN(year) && !isNaN(month) && !isNaN(day)) { if (year < 1911) year += 1911; const parsedDate = new Date(year, month - 1, day); if (!isNaN(parsedDate.getTime())) return parsedDate; } } const fallbackDate = new Date(rawDate); return isNaN(fallbackDate.getTime()) ? null : fallbackDate; }
-            function formatDate(dateString) { if (!dateString || dateString === 'undefined') return '無'; try { const date = new Date(dateString); if (isNaN(date.getTime())) return dateString; const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; } catch (e) { return dateString; } }
-            function formatTime(timeString) { if (!timeString || timeString === 'undefined') return '無'; try { const timeMatch = timeString.match(/(\d{1,2}:\d{2})/); if (timeMatch && timeMatch[1]) return timeMatch[1]; const date = new Date(`2000-01-01T${timeString}`); if (!isNaN(date.getTime())) { const hours = String(date.getHours()).padStart(2, '0'); const minutes = String(date.getMinutes()).padStart(2, '0'); return `${hours}:${minutes}`; } return timeString; } catch (e) { return timeString; } }
-            
-            function enrichContentWithLinks(htmlContent, attachments) {
-                if (!htmlContent || !attachments || attachments.length === 0) return htmlContent;
-                let enriched = htmlContent;
-                attachments.forEach((att, index) => {
-                    const code = att.code.trim(); 
-                    if (!code) return;
-                    const safeUrl = att.url.replace(/'/g, "\\'");
-                    const linkHtml = `<a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="inline-attachment-ref" title="點擊預覽 ${att.name || '附件'}">${code}</a>`;
-                    const regex = new RegExp(code, 'g');
-                    enriched = enriched.replace(regex, linkHtml);
-                });
-                return enriched;
-            }
-
-            function formatLines(text, keyword, attachments = []) { /* ... same as before ... */
-                if (!text) return '';
-                const lines = text.split('\n').map(line => line.trimEnd()).filter(line => line.trim() !== '');
-                const preface = []; const topLevelItems = []; let currentTopItem = null; let currentSubItems = [];
-                lines.forEach(line => {
-                    const trimmedLine = line.trim();
-                    const isTopLevel = /^\d+\./.test(trimmedLine);
-                    const isSubItem = /^\(\d+\)/.test(trimmedLine);
-                    const isCircleItem = /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmedLine);
-                    const isAlphaItem = /^\s*[a-e]\./i.test(line);
-                    let formattedLine = highlightKeyword(trimmedLine, keyword);
-                    if (attachments && attachments.length > 0) { formattedLine = enrichContentWithLinks(formattedLine, attachments); }
-                    if (isTopLevel) { if (currentTopItem) { if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`; topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`); } currentTopItem = { content: formattedLine }; currentSubItems = []; return; }
-                    if (isSubItem) { if (!currentTopItem) currentTopItem = { content: formattedLine }; else currentSubItems.push(`<li class="leading-relaxed">${formattedLine}</li>`); return; }
-                    if (isCircleItem || isAlphaItem) { const className = isCircleItem ? 'num-circle-1' : 'num-alpha-1'; const paragraph = `<p class="leading-relaxed ${className}">${formattedLine}</p>`; if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += paragraph; else if (currentTopItem) currentTopItem.content += paragraph; else preface.push(paragraph); return; }
-                    if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += `<br>${formattedLine}`; else if (currentTopItem) currentTopItem.content += `<br>${formattedLine}`; else preface.push(`<p class="leading-relaxed">${formattedLine}</p>`);
-                });
-                if (currentTopItem) { if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`; topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`); }
-                if (topLevelItems.length > 0) return `${preface.join('')}<ol class="space-y-2 list-none pl-0 ml-0">${topLevelItems.join('')}</ol>`;
-                if (preface.length > 0) return preface.join('');
-                return lines.map(line => { let c = highlightKeyword(line, keyword); if (attachments && attachments.length > 0) c = enrichContentWithLinks(c, attachments); return `<p class="leading-relaxed">${c}</p>`; }).join('');
-            }
-
-            function formatDiscussionSections(text, keyword, isKeywordSearch = false, attachments = []) { /* ... same as before ... */
-                if (!text) return '';
-                const lowerKeyword = keyword ? keyword.toLowerCase() : '';
-                const hasKeyword = lowerKeyword.length > 0;
-                const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
-                const subsectionPattern = /^(?:[一二三四五六七八九十]+、)/;
-                const subsections = []; const preface = []; let current = null;
-                lines.forEach(line => { if (subsectionPattern.test(line)) { if (current) subsections.push(current); current = { title: line, contentLines: [] }; } else if (current) current.contentLines.push(line); else preface.push(line); });
-                if (current) subsections.push(current);
-                if (subsections.length === 0) return formatLines(text, keyword, attachments);
-                let prefacedSections = [...subsections];
-                if (isKeywordSearch && hasKeyword) { prefacedSections = prefacedSections.filter(section => { const titleMatch = section.title.toLowerCase().includes(lowerKeyword); const contentMatch = section.contentLines.some(line => line.toLowerCase().includes(lowerKeyword)); return titleMatch || contentMatch; }); }
-                if (preface.length > 0 && prefacedSections.length > 0) { const shouldKeepPreface = !isKeywordSearch || !hasKeyword || preface.some(line => line.toLowerCase().includes(lowerKeyword)); if (shouldKeepPreface) prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines]; }
-                return prefacedSections.map(section => { const subsectionContent = section.contentLines.length > 0 ? formatLines(section.contentLines.join('\n'), keyword, attachments) : ''; let titleHtml = highlightKeyword(section.title, keyword); if (attachments && attachments.length > 0) titleHtml = enrichContentWithLinks(titleHtml, attachments); return `<div class="card sub-section-card mb-3"><h6 class="text-base font-semibold text-slate-800 mb-2">${titleHtml}</h6><div class="text-gray-700 leading-relaxed space-y-2">${subsectionContent}</div></div>`; }).join('');
-            }
-            function applyNumberingClasses(container) { /* ... same as before ... */
-                if (!container) return; const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
-                targets.forEach(element => { const rawText = element.textContent || ''; const text = rawText.trim(); if (/^\(\d+\)/.test(text)) element.classList.add('num-level-2'); else if (/^\d+\./.test(text)) element.classList.add('num-level-1'); else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(text)) element.classList.add('num-cn-1'); else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(text)) element.classList.add('num-circle-1'); else if (/^\s*[a-e]\./.test(rawText)) element.classList.add('num-alpha-1'); });
-            }
-
-            // *** 修正：強制重組 HTML 結構為卡片 (解決 11501 顯示問題) ***
-            // 現在支援純文字內容、包含 <br> 的內容，以及被單一 <p> 包住的內容
-            function restructureHtmlToCards(html) {
-                // 1. 如果內容為空，直接回傳
-                if (!html) return '';
-
-                // 2. 建立暫存 div 來解析 HTML
-                const temp = document.createElement('div');
-                temp.innerHTML = html;
-
-                // 3. 取得純文字內容進行初步檢查，如果沒有「一、」開頭，就不需要重組
-                const textContent = temp.textContent;
-                if (!/[一二三四五六七八九十]+、/.test(textContent)) return html;
-
-                // 4. 將內容攤平為行陣列 (處理 <br>, <p>, <div> 等混雜情況)
-                // 這裡使用更積極的分割策略：先轉為純文字行，再重新組合
-                // 缺點是可能會丟失部分行內樣式(如顏色)，但能確保結構正確
-                // 優點是能解決截圖中「整塊文字擠在一起」的問題
-                let cleanText = temp.innerHTML
-                    .replace(/<br\s*\/?>/gi, '\n') // 將 <br> 轉為換行
-                    .replace(/<\/p>/gi, '\n')      // 將 </p> 轉為換行
-                    .replace(/<\/div>/gi, '\n')    // 將 </div> 轉為換行
-                    .replace(/<[^>]+>/g, '');      // 移除所有其他 HTML 標籤
-
-                // 處理 HTML Entity (如 &nbsp;)
-                const decoder = document.createElement('textarea');
-                decoder.innerHTML = cleanText;
-                cleanText = decoder.value;
-
-                const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l);
-
-                // 5. 開始重組卡片
-                let result = '';
-                let currentGroup = [];
-
-                lines.forEach(line => {
-                    // 偵測大標題 (允許前面有空白)
-                    if (/^\s*[一二三四五六七八九十]+、/.test(line)) {
-                        if (currentGroup.length > 0) {
-                            result += buildCardHtmlFromLines(currentGroup);
-                            currentGroup = [];
-                        }
-                    }
-                    currentGroup.push(line);
-                });
-
-                if (currentGroup.length > 0) {
-                    result += buildCardHtmlFromLines(currentGroup);
+            function setFieldValue(id, value) {
+                const editor = tinymce.get(id); 
+                if (editor) {
+                    const formattedValue = formatMeetingContent(value, id);
+                    editor.setContent(formattedValue || ''); 
+                } else {
+                    const el = document.getElementById(id); 
+                    if (el) el.value = value || '';
                 }
-
-                return result;
             }
 
-            // 從純文字行建立卡片 HTML
-            function buildCardHtmlFromLines(lines) {
-                if (lines.length === 0) return '';
-                
-                // 第一行作為標題，自動加粗
-                let title = lines[0];
-                if (!title.includes('<strong>')) {
-                    title = title.replace(/^(\s*[一二三四五六七八九十]+、.*?[：:])?(.*)/, (m, p1, p2) => {
-                         if (p1) return `<strong>${p1}</strong>${p2}`;
-                         return `<strong>${m}</strong>`;
-                    });
-                }
-                
-                // 其餘行作為內容，套用縮排 class
-                const contentHtml = lines.slice(1).map(l => {
-                    let className = '';
-                    if (/^\(\d+\)/.test(l)) className = 'num-level-2';
-                    else if (/^\d+\./.test(l)) className = 'num-level-1';
-                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
-                    else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
-                    
-                    const classAttr = className ? ` class="${className}"` : '';
-                    return `<p${classAttr}>${l}</p>`;
-                }).join('');
-
-                return `<div class="editor-card"><p>${title}</p>${contentHtml}</div>`;
-            }
-
-            // ... (containsKeyword, parseAttachments, formatAttachmentLabel remain same) ...
-            function containsKeyword(data, keyword) { if (!keyword) return true; const lowerKeyword = keyword.toLowerCase(); const basicFields = ['會議名稱', '會議日期', '開始時間', '結束時間', '會議地點', '主席', '建立時間']; for (const field of basicFields) { if (data[field] && typeof data[field] === 'string' && data[field].toLowerCase().includes(lowerKeyword)) return true; } const meetingSectionsFields = ['壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項', '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱']; for (const field of meetingSectionsFields) { if (data[field] && data[field].toLowerCase().includes(lowerKeyword)) return true; } const attachments = parseAttachments(data); for (const attachment of attachments) { if ((attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) || (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) || (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))) return true; } return false; }
-            function parseAttachments(meeting) { const fromStructured = Array.isArray(meeting.attachments) ? meeting.attachments : Array.isArray(meeting['附件']) ? meeting['附件'] : null; if (fromStructured) { const structuredAttachments = fromStructured.map(item => ({ code: (item.code || item['附件代碼'] || '').trim(), name: (item.name || item['附件名稱'] || '').trim(), url: (item.url || item['附件網址'] || item.link || '').trim(), })).filter(item => item.url); if (structuredAttachments.length > 0) return structuredAttachments; } const nameFieldRaw = (meeting['附件名稱'] || '').trim(); const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim(); let singleFieldRaw = (meeting['附件'] || '').trim(); if (!singleFieldRaw && nameFieldRaw && !linkFieldRaw) singleFieldRaw = nameFieldRaw; if (singleFieldRaw) { const lines = singleFieldRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean); const attachments = []; const findUrl = (text) => { const match = text.match(/https?:\/\/\S+/); return match ? match[0] : ''; }; const parseTitle = (text, index) => { let code = ''; let name = text; const codeMatch = text.match(/(附件[一二三四五六七八九十]+)/); if (codeMatch) { code = codeMatch[1]; name = text.replace(code, '').replace(/[()]/g, '').trim(); } else { code = formatAttachmentLabel(index); } return { code, name }; }; for (let i = 0; i < lines.length; i += 2) { const titleLine = lines[i] || ''; const nextLine = lines[i + 1] || ''; const titleLineUrl = findUrl(titleLine); const nextLineUrl = findUrl(nextLine); if (titleLineUrl && (!nextLineUrl || nextLineUrl === titleLineUrl)) { const cleanedTitle = titleLine.replace(titleLineUrl, '').trim(); const { code, name } = parseTitle(cleanedTitle, attachments.length); attachments.push({ code, name, url: titleLineUrl }); if (!nextLineUrl) { i -= 1; } continue; } if (nextLineUrl) { const { code, name } = parseTitle(titleLine, attachments.length); attachments.push({ code, name, url: nextLineUrl }); continue; } } return attachments; } if (!nameFieldRaw && !linkFieldRaw) return []; const cleanAttachmentName = (name) => { const trimmed = (name || '').trim(); const lower = trimmed.toLowerCase(); const isInvalid = trimmed === '未命名附件' || trimmed === '無' || lower === 'n/a' || lower === 'na' || lower === 'none'; return isInvalid ? '' : trimmed; }; const names = nameFieldRaw ? nameFieldRaw.split(/\r?\n/).map(name => cleanAttachmentName(name)) : []; const links = linkFieldRaw ? linkFieldRaw.split(/\r?\n/).map(link => link.trim()).filter(link => link !== '') : []; const maxLength = Math.max(names.length, links.length); const attachments = []; for (let i = 0; i < maxLength; i++) { const rawName = names[i] || ''; let name = rawName; let url = links[i] || ''; if (!url) { const urlMatch = rawName.match(/https?:\/\/\S+/); if (urlMatch) { url = urlMatch[0]; name = cleanAttachmentName(rawName.replace(url, '').trim()); } } name = cleanAttachmentName(name); if (url) { attachments.push({ name, url }); } } return attachments; }
-            function formatAttachmentLabel(index) { const labels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十']; const label = labels[index] || `${index + 1}`; return `附件${label}`; }
-
-            async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
-                // ... (Search logic similar to before) ...
-                const isKeywordSearch = keyword.trim().length > 0;
-                let lowerKeyword = keyword.toLowerCase();
-                if (initialMessage) { initialMessage.classList.add('hidden'); }
-                resultsContainer.innerHTML = '';
-                showMessage('正在查詢會議內容，請稍候...', 'info');
-
+            async function loadMeetingData(rowIndex, url) {
+                const formTitle = document.getElementById('formTitle');
+                const deleteButton = document.getElementById('deleteButton');
+                const rowIndexInput = document.getElementById('rowIndex');
+                const creationTimeInput = document.getElementById('creationTime');
+                const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
+                formTitle.textContent = '編輯會議內容';
+                deleteButton.classList.remove('hidden');
+                showMessage('正在載入資料...', 'info', 0);
                 try {
-                    let url = `${APPS_SCRIPT_WEB_APP_URL}?`;
-                    const params = [];
-                    if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
-                    if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
-                    if (showLatest) params.push(`showLatest=${showLatest}`);
-                    url += params.join('&');
-
-                    const response = await fetch(url);
+                    const fetchUrl = `${url}?action=getRecord&rowIndex=${rowIndex}`;
+                    const response = await fetch(fetchUrl);
                     const result = await response.json();
-
-                    if (result.success) {
-                        if (result.data && result.data.length > 0) {
-                            resultsContainer.innerHTML = '';
-                            const sortedData = [...result.data].sort((a, b) => {
-                                const dateA = parseMeetingDate(a['會議日期']); const dateB = parseMeetingDate(b['會議日期']);
-                                if (dateA && dateB) { return dateB - dateA; } if (dateA) return -1; if (dateB) return 1; return 0;
-                            });
-
-                            let displayedMeetingsCount = 0; let highestRocYear = null; const monthsByYear = new Map(); const meetingCards = [];
-
-                            sortedData.forEach(meeting => {
-                                if (keyword && !containsKeyword(meeting, keyword)) { return; }
-                                // ... (No meeting logic check remains same) ...
-                                if (meeting['狀態'] === '未召開') {
-                                    displayedMeetingsCount++;
-                                    const meetingDate = parseMeetingDate(meeting['會議日期']);
-                                    const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
-                                    const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
-                                    if (meetingRocYear !== null) { if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); } if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); } if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; } }
-                                    const meetingCard = document.createElement('div'); meetingCard.className = 'w-full flex justify-center items-center py-10'; meetingCard.innerHTML = `<p class="text-gray-500 text-lg">${meetingRocYear}年${parseInt(meetingMonth)}月未召開會議。</p>`;
-                                    meetingCards.push({ element: meetingCard, month: meetingMonth, rocYear: meetingRocYear });
-                                    return; 
-                                }
-
-                                displayedMeetingsCount++;
-                                const meetingDate = parseMeetingDate(meeting['會議日期']);
-                                const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
-                                const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
-                                if (meetingRocYear !== null) { if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); } if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); } if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; } }
-
-                                const attachments = parseAttachments(meeting); 
-                                const meetingCard = document.createElement('div'); meetingCard.className = 'mb-6';
-                                let cardHtml = `
-                                    <div class="flex items-start justify-between gap-4 mb-4">
-                                        <h3 class="text-2xl font-semibold text-blue-900">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
-                                        <button class="edit-button px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg shadow-sm hover:bg-gray-300 transition-colors duration-150 ease-in-out" data-row-index="${meeting.rowIndex}">編輯</button>
-                                    </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
-                                        <p class="text-gray-700"><strong class="text-gray-900">日期</strong><br>${highlightKeyword(formatDate(meeting['會議日期']), keyword)}</p>
-                                        <p class="text-gray-700"><strong class="text-gray-900">時間</strong><br>${highlightKeyword(formatTime(meeting['開始時間']), keyword)} - ${highlightKeyword(formatTime(meeting['結束時間']), keyword)}</p>
-                                        <p class="text-gray-700"><strong class="text-gray-900">主席</strong><br>${highlightKeyword(meeting['主席'] || '無', keyword)}</p>
-                                    </div>
-                                `;
-
-                                let sectionsHtml = '';
-                                const meetingSections = [
-                                    { title: '壹、頒獎表揚', field: '壹、頒獎表揚' }, { title: '貳、主席報告', field: '貳、主席報告' }, { title: '參、上次會議追蹤事項', field: '參、上次會議追蹤事項' }, { title: '肆、本次會議報告及討論事項', field: '肆、本次會議報告及討論事項' }, { title: '伍、臨時動議', field: '伍、臨時動議' }, { title: '陸、下次會議追蹤事項', field: '陸、下次會議追蹤事項' }, { title: '柒、主席結論', field: '柒、主席結論' }
-                                ];
-
-                                meetingSections.forEach((section, sectionIndex) => {
-                                    const content = meeting[section.field] || '';
-                                    const isSectionRelevant = isKeywordSearch ? (content.toLowerCase().includes(lowerKeyword) || section.title.toLowerCase().includes(lowerKeyword)) : true;
-                                    if (isKeywordSearch && !isSectionRelevant) { return; }
-
-                                    if (content.trim() !== '') {
-                                        const sectionExpandedClass = 'expanded'; const sectionArrowClass = 'expanded';
-                                        const sectionId = `section-${meeting.rowIndex}-${sectionIndex}`;
-                                        const isHTML = /<[a-z][\s\S]*>/i.test(content);
-                                        let sectionContentHtml = '';
-
-                                        if (isHTML) {
-                                            let processedHtml = content;
-                                            // *** 應用重組邏輯 ***
-                                            if (section.field === '肆、本次會議報告及討論事項' && !content.includes('editor-card')) {
-                                                processedHtml = restructureHtmlToCards(content);
-                                            }
-                                            
-                                            if (isKeywordSearch && content.toLowerCase().includes(lowerKeyword)) {
-                                                let filtered = filterAndHighlightHTML(processedHtml, keyword);
-                                                sectionContentHtml = enrichContentWithLinks(filtered, attachments);
-                                            } else {
-                                                sectionContentHtml = enrichContentWithLinks(processedHtml, attachments);
-                                            }
-                                        } else {
-                                            const isDiscussionSection = section.field === '肆、本次會議報告及討論事項';
-                                            sectionContentHtml = isDiscussionSection ? formatDiscussionSections(content, keyword, isKeywordSearch, attachments) : formatLines(content, keyword, attachments);
-                                        }
-
-                                        if (isKeywordSearch && section.field === '肆、本次會議報告及討論事項' && !isHTML) {
-                                            if (sectionContentHtml) { sectionsHtml += `<div class="meeting-section">${sectionContentHtml}</div>`; }
-                                            return;
-                                        }
-
-                                        if (sectionContentHtml.trim() || section.title.toLowerCase().includes(lowerKeyword)) {
-                                            sectionsHtml += `
-                                                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                    <div class="flex justify-between items-center cursor-pointer section-header" data-target="${sectionId}">
-                                                        <h4 class="text-lg font-semibold text-teal-700">${highlightKeyword(section.title, keyword)}</h4>
-                                                        <svg class="arrow-icon w-5 h-5 text-gray-600 ${sectionArrowClass}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                                    </div>
-                                                    <div id="${sectionId}" class="section-content meeting-section mt-2 text-gray-700 ${sectionExpandedClass}">
-                                                        ${sectionContentHtml}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }
-                                    }
-                                });
-
-                                // *** 修正3：附件區域文字改為「下載檔案」 ***
-                                const shouldDisplayAttachments = !isKeywordSearch || attachments.some(attachment => ((attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) || (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) || (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))));
-                                if (attachments.length > 0 && shouldDisplayAttachments) {
-                                    const attachmentId = `attachments-${meeting.rowIndex}`;
-                                    const attachmentList = attachments.map((attachment, index) => {
-                                        const safeUrl = attachment.url.replace(/'/g, "\\'"); const attachmentLabel = formatAttachmentLabel(index);
-                                        const displayCode = attachment.code && attachment.code.trim() ? attachment.code.trim() : attachmentLabel;
-                                        const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
-                                        return `
-                                            <div class="flex items-center gap-2 py-1">
-                                                <span class="text-gray-800 min-w-[60px] font-medium">${displayCode}</span>
-                                                <span class="text-gray-600 mr-2">${displayName}</span>
-                                                <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="attachment-link">
-                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                                    下載檔案
-                                                </a>
-                                            </div>
-                                        `;
-                                    }).join('');
-                                    sectionsHtml += `<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200"><div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentId}"><h4 class="text-lg font-semibold text-teal-700">附件下載區</h4><svg class="arrow-icon w-5 h-5 text-gray-600 expanded" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></div><div id="${attachmentId}" class="section-content meeting-section mt-2 text-gray-700 expanded"><div class="space-y-2 mt-2 pl-2 border-l-2 border-blue-100">${attachmentList}</div></div></div>`;
-                                }
-
-                                if (sectionsHtml) { cardHtml += `<div class="flex flex-col gap-3">${sectionsHtml}</div>`; }
-                                meetingCard.innerHTML = cardHtml;
-                                applyNumberingClasses(meetingCard);
-                                meetingCards.push({ element: meetingCard, month: meetingMonth, rocYear: meetingRocYear });
-                            });
-
-                            const targetYear = highestRocYear !== null ? highestRocYear : currentNavYear;
-                            const availableMonths = monthsByYear.get(targetYear) || new Set();
-                            const monthAnchors = new Set();
-                            meetingCards.forEach(({ element, month, rocYear }) => {
-                                if (rocYear === targetYear && month && !monthAnchors.has(month)) { const anchor = document.createElement('div'); anchor.id = `month-${month}`; anchor.className = 'block h-0 scroll-mt-24'; resultsContainer.appendChild(anchor); monthAnchors.add(month); }
-                                resultsContainer.appendChild(element);
-                            });
-                            if (displayedMeetingsCount > 0) { updateMonthNav(targetYear, availableMonths); } else { updateMonthNav(targetYear, new Set()); }
-                            resultsContainer.querySelectorAll('.section-header').forEach(header => { header.addEventListener('click', (event) => { if (event.target.tagName === 'BUTTON' || event.target.tagName === 'A' || event.target.closest('A') || event.target.closest('BUTTON')) { return; } const targetId = header.dataset.target; const contentDiv = document.getElementById(targetId); const arrowIcon = header.querySelector('.arrow-icon'); if (contentDiv) { contentDiv.classList.toggle('expanded'); arrowIcon.classList.toggle('expanded'); } }); });
-
-                            if (displayedMeetingsCount === 0) { 
-                                const noMeetingMonths = { '114': ['02', '08', '11'], '115': ['02'] }; 
-                                const currentYearStr = String(currentNavYear); 
-                                const searchMonth = startDate.substring(5, 7); 
-                                let noMeeting = false; if (startDate && endDate && !keyword && noMeetingMonths[currentYearStr] && noMeetingMonths[currentYearStr].includes(searchMonth)) { noMeeting = true; }
-                                if (noMeeting) { const displayMonth = parseInt(searchMonth, 10); resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`; showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info'); } 
-                                else { resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>'; showMessage('沒有找到符合條件的會議紀錄。', 'info'); }
-                            } else { showMessage(`找到 ${displayedMeetingsCount} 條結果。`, 'success'); }
-                        } else { 
-                            const noMeetingMonths = { '114': ['02', '08', '11'], '115': ['02'] }; const currentYearStr = String(currentNavYear); const searchMonth = startDate.substring(5, 7); 
-                            let noMeeting = false; if (startDate && endDate && !keyword && noMeetingMonths[currentYearStr] && noMeetingMonths[currentYearStr].includes(searchMonth)) { noMeeting = true; }
-                            if (noMeeting) { const displayMonth = parseInt(searchMonth, 10); resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`; showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info'); } 
-                            else { resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>'; showMessage('沒有找到符合條件的會議紀錄。', 'info'); } updateMonthNav(currentNavYear, new Set());
+                    if (result.success && result.data) {
+                        const data = result.data;
+                        setFieldValue('meetingName', data['會議名稱']);
+                        setFieldValue('meetingDate', formatDateForInput(data['會議日期']));
+                        setFieldValue('startTime', formatTimeForInput(data['開始時間']));
+                        setFieldValue('endTime', formatTimeForInput(data['結束時間']));
+                        setFieldValue('location', data['會議地點']);
+                        setFieldValue('chairman', data['主席']);
+                        setFieldValue('awards', data['壹、頒獎表揚']);
+                        setFieldValue('chairmanReport', data['貳、主席報告']);
+                        setFieldValue('lastMeetingFollowUp', data['參、上次會議追蹤事項']);
+                        setFieldValue('currentMeetingDiscussion', data['肆、本次會議報告及討論事項']);
+                        setFieldValue('adHocMotion', data['伍、臨時動議']);
+                        setFieldValue('nextMeetingFollowUp', data['陸、下次會議追蹤事項']);
+                        setFieldValue('chairmanConclusion', data['柒、主席結論']);
+                        setFieldValue('attachmentName', data['附件名稱']);
+                        creationTimeInput.value = data['建立時間'] || '';
+                        if (data['狀態'] === '未召開') {
+                            noMeetingCheckbox.checked = true;
+                            noMeetingCheckbox.dispatchEvent(new Event('change'));
                         }
-                    } else { resultsContainer.innerHTML = `<p class="text-red-500 text-center">查詢失敗: ${result.message}</p>`; showMessage(`查詢失敗: ${result.message}`, 'error'); }
-                } catch (error) { console.error('查詢過程中發生錯誤:', error); resultsContainer.innerHTML = '<p class="text-red-500 text-center">網路錯誤或 Apps Script 發生問題。請檢查控制台。</p>'; showMessage('網路錯誤或 Apps Script 發生問題。', 'error'); }
+                        rowIndexInput.value = rowIndex;
+                        showMessage('資料載入成功！', 'success');
+                    } else {
+                        showMessage('載入資料失敗: ' + (result.message || '未知錯誤'), 'error');
+                    }
+                } catch (error) {
+                    showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
+                    console.error('載入資料時發生錯誤:', error);
+                }
             }
 
-            // ... (Event listeners) ...
-            searchButton.addEventListener('click', () => { const keyword = keywordInput.value.trim(); const startDate = startDateInput.value; const endDate = endDateInput.value; performSearch(keyword, startDate, endDate); });
-            showAllButton.addEventListener('click', () => { keywordInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; performSearch('', '', '', true); });
-            keywordInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') { searchButton.click(); } });
-            clearButton.addEventListener('click', () => { keywordInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; messageContainer.classList.add('hidden'); resultsContainer.innerHTML = '<p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>'; initialMessage = document.getElementById('initialMessage'); updateMonthNav(currentNavYear, new Set()); keywordInput.focus(); });
-            addMeetingButton.addEventListener('click', () => { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); usernameInput.value = ''; passwordInput.value = ''; loginMessage.classList.add('hidden'); usernameInput.focus(); loginButton.dataset.targetUrl = MEETING_INPUT_PAGE_URL; });
-            document.addEventListener('click', (event) => { if (event.target.classList.contains('edit-button')) { const rowIndex = event.target.dataset.rowIndex; loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); usernameInput.value = ''; passwordInput.value = ''; loginMessage.classList.add('hidden'); usernameInput.focus(); loginButton.dataset.targetUrl = `${MEETING_INPUT_PAGE_URL}?editRow=${rowIndex}`; } });
-            cancelLoginButton.addEventListener('click', () => { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); });
-            loginButton.addEventListener('click', async () => { /* ... login logic ... */ const username = usernameInput.value.trim(); const password = passwordInput.value.trim(); if (!username || !password) { loginMessage.textContent = '請輸入帳號與密碼。'; loginMessage.classList.remove('hidden'); return; } try { const params = new URLSearchParams(); params.append('action', 'login'); params.append('username', username); params.append('password', password); const response = await fetch(APPS_SCRIPT_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', }, body: params.toString(), }); const result = await response.json(); if (result.success) { loginMessage.classList.add('hidden'); loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL; window.location.href = targetUrl; } else { loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。'; loginMessage.classList.remove('hidden'); } } catch (error) { console.error('登入時發生錯誤：', error); loginMessage.textContent = '登入時發生錯誤，請稍後再試。'; loginMessage.classList.remove('hidden'); } });
-            usernameInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') { passwordInput.focus(); } });
-            passwordInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') { loginButton.click(); } });
-            window.openDocumentViewer = function(url) { let embedUrl = url; if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) { embedUrl = url.replace(/\/edit|\/view/, '/embed'); } else if (url.includes('drive.google.com/file/d/')) { embedUrl = url.replace(/\/view\?usp=sharing/, '/preview'); } documentViewerIframe.src = embedUrl; documentViewerModal.classList.add('flex'); documentViewerModal.classList.remove('hidden'); };
-            closeDocumentViewerButton.addEventListener('click', () => { documentViewerModal.classList.add('hidden'); documentViewerModal.classList.remove('flex'); documentViewerIframe.src = ''; });
-            documentViewerModal.addEventListener('click', (event) => { if (event.target === documentViewerModal) { documentViewerModal.classList.add('hidden'); documentViewerModal.classList.remove('flex'); documentViewerIframe.src = ''; } });
-            
-            // 初始化呼叫：一定要先創建按鈕
-            createMonthButtons(currentNavYear); 
-            updateMonthNav(currentNavYear, new Set());
-            
-            const urlParams = new URLSearchParams(window.location.search); if (!urlParams.get('keyword') && !urlParams.get('startDate') && !urlParams.get('endDate')) { performSearch('', '', '', true); }
+            async function submitForm(event, url) {
+                event.preventDefault();
+                const form = document.getElementById('meetingForm');
+                const rowIndexInput = document.getElementById('rowIndex');
+                const creationTimeInput = document.getElementById('creationTime');
+                tinymce.triggerSave();
+                showMessage('正在提交資料中，請稍候...', 'info', 0);
+                const formData = new FormData(form);
+                const meetingData = {};
+                for (let [key, value] of formData.entries()) {
+                    meetingData[key] = value;
+                }
+                if (!meetingData['狀態']) { meetingData['狀態'] = ''; }
+                const isUpdate = !!rowIndexInput.value;
+                if (isUpdate) {
+                    meetingData.action = 'updateRecord';
+                    meetingData.rowIndex = rowIndexInput.value;
+                    meetingData['建立時間'] = creationTimeInput.value;
+                } else {
+                    meetingData.action = 'addRecord';
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    meetingData['建立時間'] = now.toISOString().slice(0, 16);
+                }
+                console.log('準備提交的會議資料:', meetingData);
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: new URLSearchParams(meetingData),
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存！', 'success');
+                        setTimeout(() => {
+                           try { window.location.href = 'index.html'; } 
+                           catch (e) { console.warn('無法導航:', e); }
+                        }, 2000);
+                    } else {
+                        showMessage('儲存失敗: ' + (result.message || '未知錯誤'), 'error');
+                    }
+                } catch (error) {
+                    console.error('發送資料到 Apps Script 時發生錯誤:', error);
+                    showMessage('網路錯誤或 Apps Script 發生問題。請檢查控制台。', 'error');
+                }
+            }
+
+            function showDeleteConfirm(callback) {
+                const modal = document.getElementById('deleteConfirmModal');
+                const confirmBtn = document.getElementById('confirmDeleteButton');
+                const cancelBtn = document.getElementById('cancelDeleteButton');
+                modal.classList.add('flex');
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                newConfirmBtn.addEventListener('click', () => { callback(true); hideDeleteConfirm(); });
+                newCancelBtn.addEventListener('click', () => { callback(false); hideDeleteConfirm(); });
+            }
+
+            function hideDeleteConfirm() {
+                const modal = document.getElementById('deleteConfirmModal');
+                modal.classList.remove('flex');
+            }
+
+            const form = document.getElementById('meetingForm');
+            const creationTimeInput = document.getElementById('creationTime');
+            const startTimeInput = document.getElementById('startTime');
+            const endTimeInput = document.getElementById('endTime');
+            const formTitle = document.getElementById('formTitle');
+            const rowIndexInput = document.getElementById('rowIndex');
+            const deleteButton = document.getElementById('deleteButton');
+            const fileInput = document.getElementById('fileInput');
+            const parseFileButton = document.getElementById('parseFileButton');
+            const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
+            const contentFields = document.getElementById('contentFields');
+
+            const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const editRowIndex = urlParams.get('editRow');
+
+            if (editRowIndex) {
+                loadMeetingData(editRowIndex, APPS_SCRIPT_WEB_APP_URL);
+            } else {
+                formTitle.textContent = '新增會議內容';
+                deleteButton.classList.add('hidden');
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                creationTimeInput.value = now.toISOString().slice(0, 16);
+                startTimeInput.value = '12:30';
+                document.getElementById('location').value = '第五醫療大樓五樓552會議室';
+                document.getElementById('chairman').value = '陳志成';
+            }
+
+            parseFileButton.addEventListener('click', async () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    showMessage('請選擇一個檔案！', 'error');
+                    return;
+                }
+                parseFileButton.disabled = true;
+                parseFileButton.textContent = '解析中...';
+                showMessage('正在解析檔案...', 'info', 0);
+                try {
+                    let fileContent = '';
+                    const fileReader = new FileReader();
+                    if (file.name.endsWith('.docx')) {
+                        fileContent = await new Promise((resolve, reject) => {
+                            fileReader.onload = (e) => {
+                                var options = {
+                                    convertImage: mammoth.images.imgElement(function(image) { return Promise.resolve({ src: "" }); })
+                                };
+                                mammoth.convertToHtml({ arrayBuffer: e.target.result }, options)
+                                    .then(result => {
+                                        let html = result.value;
+                                        html = html.replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n\n'); 
+                                        html = html.replace(/<\/tr>/gi, '\n');
+                                        html = html.replace(/<\/(td|th)>/gi, '  '); 
+                                        html = html.replace(/<br\s*\/?>/gi, '\n');
+                                        let text = html.replace(/<[^>]+>/g, '');
+                                        const doc = new DOMParser().parseFromString(text, 'text/html');
+                                        text = doc.body.textContent || "";
+                                        text = text.replace(/[\x0b\f\u2028\u2029]/g, '\n');
+                                        text = text.replace(/≧/g, '>=');
+                                        text = text.replace(/→/g, '->');
+                                        
+                                        // *** 應用章節正規化 (解決 11306 問題) ***
+                                        text = normalizeMeetingText(text);
+
+                                        const lines = text.split(/\r\n|\r|\n/);
+                                        const cleanedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
+                                        resolve(cleanedLines.join('\n'));
+                                    })
+                                    .catch(reject);
+                            };
+                            fileReader.onerror = reject;
+                            fileReader.readAsArrayBuffer(file);
+                        });
+                    } else {
+                        fileContent = await new Promise((resolve, reject) => {
+                            fileReader.onload = (e) => resolve(e.target.result);
+                            fileReader.onerror = reject;
+                            fileReader.readAsText(file);
+                        });
+                    }
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            action: 'parseFileContent',
+                            fileContent: fileContent
+                        })
+                    });
+                    if (!response.ok) { throw new Error(`伺服器錯誤: ${response.statusText}`); }
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        const parsedData = result.data;
+                        setFieldValue('meetingName', parsedData['會議名稱']);
+                        setFieldValue('meetingDate', formatDateForInput(parsedData['會議日期']));
+                        setFieldValue('startTime', formatTimeForInput(parsedData['開始時間']));
+                        setFieldValue('endTime', formatTimeForInput(parsedData['結束時間']));
+                        setFieldValue('location', parsedData['會議地點']);
+                        setFieldValue('chairman', parsedData['主席']);
+                        setFieldValue('awards', parsedData['壹、頒獎表揚']);
+                        setFieldValue('chairmanReport', parsedData['貳、主席報告']);
+                        setFieldValue('lastMeetingFollowUp', parsedData['參、上次會議追蹤事項']);
+                        setFieldValue('currentMeetingDiscussion', parsedData['肆、本次會議報告及討論事項']);
+                        setFieldValue('adHocMotion', parsedData['伍、臨時動議']);
+                        setFieldValue('nextMeetingFollowUp', parsedData['陸、下次會議追蹤事項']);
+                        setFieldValue('chairmanConclusion', parsedData['柒、主席結論']);
+                        setFieldValue('attachmentName', parsedData['附件名稱']);
+                        showMessage('檔案解析成功，資料已填入表單！', 'success');
+                    } else {
+                        showMessage('解析失敗: ' + (result.message || '無法從檔案中解析到資料'), 'error');
+                    }
+                } catch (error) {
+                    showMessage('解析檔案時發生錯誤。請檢查檔案格式或控制台。', 'error');
+                    console.error('檔案解析錯誤:', error);
+                } finally {
+                    parseFileButton.disabled = false;
+                    parseFileButton.textContent = '解析檔案';
+                }
+            });
+
+            form.addEventListener('submit', (event) => { submitForm(event, APPS_SCRIPT_WEB_APP_URL); });
+            deleteButton.addEventListener('click', () => {
+                showDeleteConfirm(async (isConfirmed) => {
+                    if (!isConfirmed) return;
+                    showMessage('正在刪除資料中...', 'info', 0);
+                    try {
+                        const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                action: 'deleteRecord',
+                                rowIndex: rowIndexInput.value
+                            })
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            showMessage('會議紀錄已成功刪除！', 'success');
+                            setTimeout(() => {
+                               try { window.location.href = 'index.html'; } 
+                               catch (e) { console.warn('無法導航:', e); }
+                            }, 2000);
+                        } else {
+                            showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
+                        }
+                    } catch (error) {
+                        showMessage('網路錯誤或 Apps Script 發生問題。', 'error');
+                        console.error('刪除資料時發生錯誤:', error);
+                    }
+                });
+            });
+
+            noMeetingCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    contentFields.classList.add('hidden');
+                    startTimeInput.required = false;
+                    endTimeInput.required = false;
+                } else {
+                    contentFields.classList.remove('hidden');
+                    startTimeInput.required = true;
+                    endTimeInput.required = true;
+                }
+            });
         });
     </script>
-
 </body>
 </html>
