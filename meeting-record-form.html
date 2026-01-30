@@ -119,14 +119,14 @@
                 <!-- 壹、頒獎表揚 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="awards" class="block text-sm font-medium text-gray-700 mb-1">壹、頒獎表揚</label>
-                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)，請勿直接貼上圖片以免超過字數限制。</div>
+                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)。</div>
                     <textarea id="awards" name="壹、頒獎表揚" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
                 <!-- 貳、主席報告 (富文字) -->
                 <div class="md:col-span-2">
                     <label for="chairmanReport" class="block text-sm font-medium text-gray-700 mb-1">貳、主席報告</label>
-                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)，請勿直接貼上圖片以免超過字數限制。</div>
+                    <div class="text-xs text-gray-500 mb-1">支援表格插入。圖片請使用連結 (URL)。</div>
                     <textarea id="chairmanReport" name="貳、主席報告" rows="3" class="rich-editor mt-1 block w-full shadow-sm"></textarea>
                 </div>
 
@@ -138,10 +138,16 @@
 
                 <!-- 肆、本次會議報告及討論事項 (富文字) -->
                 <div class="md:col-span-2">
-                    <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700 mb-1">
-                        肆、本次會議報告及討論事項
-                    </label>
-                    <div class="text-xs text-gray-500 mb-1">此欄位將自動套用卡片式排版。支援表格插入。圖片請使用連結 (URL)。</div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="currentMeetingDiscussion" class="block text-sm font-medium text-gray-700">
+                            肆、本次會議報告及討論事項
+                        </label>
+                        <!-- 新增自動排版按鈕 -->
+                        <button type="button" onclick="manualFormatDiscussion()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition">
+                            🪄 自動排版 (轉為卡片)
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-500 mb-1">此欄位支援卡片式排版。若手動貼上文字，請點擊右上角「自動排版」按鈕。</div>
                     <textarea
                         id="currentMeetingDiscussion"
                         name="肆、本次會議報告及討論事項"
@@ -225,6 +231,117 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
+        // *** 全域輔助函數：手動觸發排版 ***
+        // 這是給 "自動排版" 按鈕用的
+        window.manualFormatDiscussion = function() {
+            const editor = tinymce.get('currentMeetingDiscussion');
+            if (editor) {
+                // 1. 取得目前內容 (可能是 HTML)
+                let content = editor.getContent({format: 'text'}); // 先取純文字以清除髒 HTML
+                if (!content.trim()) return;
+
+                // 2. 重新執行格式化邏輯
+                // 注意：這裡我們假設使用者貼上的是純文字，我們重新把它轉成卡片 HTML
+                // 如果內容已經是 HTML，getContent('text') 會過濾掉標籤，只剩文字，
+                // 這剛好可以讓我們重新建立乾淨的卡片結構
+                const formattedHtml = formatMeetingContent(content, 'currentMeetingDiscussion');
+                editor.setContent(formattedHtml);
+            }
+        };
+
+        // *** 格式化函數定義 (拉出來以便共用) ***
+        function decodeHtmlEntities(text) {
+            if (!text) return text;
+            const txt = document.createElement("textarea");
+            txt.innerHTML = text;
+            return txt.value;
+        }
+
+        // 建立卡片 HTML 的輔助函數
+        function createCardHtml(lines) {
+            if (lines.length === 0) return '';
+            
+            let titleHtml = lines[0];
+            const headerRegex = /^([一二三四五六七八九十]+、.*?[：:])?(.*)/;
+            
+            if (/^[一二三四五六七八九十]+、/.test(titleHtml)) {
+                    titleHtml = titleHtml.replace(headerRegex, (match, p1, p2) => {
+                    if (p1) return `<strong>${p1}</strong>${p2}`; 
+                    return `<strong>${match}</strong>`; 
+                });
+            }
+
+            const contentHtml = lines.slice(1).map(l => {
+                let className = '';
+                if (/^\(\d+\)/.test(l)) className = 'num-level-2';
+                else if (/^\d+\./.test(l)) className = 'num-level-1';
+                else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
+                else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
+                const classAttr = className ? ` class="${className}"` : '';
+                return `<p${classAttr}>${l}</p>`;
+            }).join('');
+
+            return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
+        }
+
+        // 核心格式化函數
+        function formatMeetingContent(text, fieldId) {
+            if (!text) return '';
+
+            let formatted = decodeHtmlEntities(text);
+
+            // 1. 強力清洗
+            let raw = formatted
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<p[^>]*>/gi, '')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<div[^>]*>/gi, '');
+
+            // 2. 切割並過濾空行
+            const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+
+            // 3. 處理 "肆" 區塊的卡片 (currentMeetingDiscussion)
+            if (fieldId === 'currentMeetingDiscussion') {
+                const cards = [];
+                let currentCardContent = [];
+                const headerRegex = /^[一二三四五六七八九十]+、/;
+
+                lines.forEach((line) => {
+                    if (headerRegex.test(line)) {
+                        if (currentCardContent.length > 0) {
+                            cards.push(createCardHtml(currentCardContent));
+                            currentCardContent = [];
+                        }
+                    }
+                    currentCardContent.push(line);
+                });
+
+                if (currentCardContent.length > 0) {
+                    cards.push(createCardHtml(currentCardContent));
+                }
+
+                if (cards.length === 0) {
+                    return lines.map(l => `<p>${l}</p>`).join('');
+                }
+
+                return cards.join('');
+            }
+
+            // 4. 其他欄位處理
+            return lines.map(line => {
+                let className = '';
+                if (/^\(\d+\)/.test(line)) className = 'num-level-2';
+                else if (/^\d+\./.test(line)) className = 'num-level-1';
+                else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
+                else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
+                else if (/^[一二三四五六七八九十]+、/.test(line)) className = 'num-cn-1';
+
+                const classAttr = className ? ` class="${className}"` : '';
+                return `<p${classAttr}>${line}</p>`;
+            }).join('');
+        }
+
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -236,10 +353,8 @@
                 height: 300,
                 menubar: false,
                 statusbar: false,
-                
                 entity_encoding: 'raw',
                 paste_data_images: false,
-
                 content_style: `
                     body { font-family: 'Inter', sans-serif; font-size: 16px; color: #374151; line-height: 1.75; }
                     p { margin: 0; padding: 0; margin-bottom: 0.5em; }
@@ -247,8 +362,6 @@
                     ul, ol { margin: 0; padding: 0; }
                     table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
                     table td, table th { border: 1px solid #ddd; padding: 8px; }
-                    
-                    /* 模擬卡片樣式 (對應 "肆、" 區塊) */
                     .editor-card {
                         background-color: #f8fafc;
                         border: 1px solid #e2e8f0;
@@ -257,15 +370,12 @@
                         margin-bottom: 1rem;
                         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
                     }
-                    
-                    /* 縮排樣式 */
                     .num-level-1 { margin-left: 0 !important; padding-left: 0.8em !important; text-indent: -0.8em !important; }
                     .num-level-2 { margin-left: 0.8em; padding-left: 1.2em; text-indent: -1.2em; }
                     .num-cn-1 { padding-left: 2em; text-indent: -2em; }
                     .num-circle-1 { margin-left: 41px; padding-left: 10px; text-indent: -10px; }
                     .num-alpha-1 { margin-left: 49px; padding-left: 8px; text-indent: -8px; }
                 `,
-
                 plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
                 toolbar: 'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat | help',
                 branding: false,
@@ -298,96 +408,6 @@
                 }
             }
 
-            function decodeHtmlEntities(text) {
-                if (!text) return text;
-                const txt = document.createElement("textarea");
-                txt.innerHTML = text;
-                return txt.value;
-            }
-
-            function formatMeetingContent(text, fieldId) {
-                if (!text) return '';
-
-                let formatted = decodeHtmlEntities(text);
-
-                // 1. 強力清洗
-                let raw = formatted
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<\/p>/gi, '\n')
-                    .replace(/<p[^>]*>/gi, '')
-                    .replace(/<\/div>/gi, '\n')
-                    .replace(/<div[^>]*>/gi, '');
-
-                // 2. 切割並過濾空行
-                const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
-
-                // 3. 處理 "肆" 區塊的卡片
-                if (fieldId === 'currentMeetingDiscussion') {
-                    const cards = [];
-                    let currentCardContent = [];
-                    const headerRegex = /^[一二三四五六七八九十]+、/;
-
-                    lines.forEach((line) => {
-                        if (headerRegex.test(line)) {
-                            if (currentCardContent.length > 0) {
-                                cards.push(createCardHtml(currentCardContent));
-                                currentCardContent = [];
-                            }
-                        }
-                        currentCardContent.push(line);
-                    });
-
-                    if (currentCardContent.length > 0) {
-                        cards.push(createCardHtml(currentCardContent));
-                    }
-
-                    if (cards.length === 0) {
-                        return lines.map(l => `<p>${l}</p>`).join('');
-                    }
-
-                    return cards.join('');
-                }
-
-                // 4. 其他欄位處理
-                return lines.map(line => {
-                    let className = '';
-                    if (/^\(\d+\)/.test(line)) className = 'num-level-2';
-                    else if (/^\d+\./.test(line)) className = 'num-level-1';
-                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
-                    else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
-                    else if (/^[一二三四五六七八九十]+、/.test(line)) className = 'num-cn-1';
-
-                    const classAttr = className ? ` class="${className}"` : '';
-                    return `<p${classAttr}>${line}</p>`;
-                }).join('');
-            }
-
-            function createCardHtml(lines) {
-                if (lines.length === 0) return '';
-                
-                let titleHtml = lines[0];
-                const headerRegex = /^([一二三四五六七八九十]+、.*?[：:])?(.*)/;
-                
-                if (/^[一二三四五六七八九十]+、/.test(titleHtml)) {
-                     titleHtml = titleHtml.replace(headerRegex, (match, p1, p2) => {
-                        if (p1) return `<strong>${p1}</strong>${p2}`; 
-                        return `<strong>${match}</strong>`; 
-                    });
-                }
-
-                const contentHtml = lines.slice(1).map(l => {
-                    let className = '';
-                    if (/^\(\d+\)/.test(l)) className = 'num-level-2';
-                    else if (/^\d+\./.test(l)) className = 'num-level-1';
-                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
-                    else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
-                    const classAttr = className ? ` class="${className}"` : '';
-                    return `<p${classAttr}>${l}</p>`;
-                }).join('');
-
-                return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
-            }
-
             function setFieldValue(id, value) {
                 const editor = tinymce.get(id); 
                 if (editor) {
@@ -399,7 +419,38 @@
                 }
             }
 
+            // *** 關鍵修正：章節正規化函數 (解決 11306 問題) ***
+            function normalizeMeetingText(text) {
+                if (!text) return "";
+                // 將舊版章節標題對應到新版，確保後端能抓到正確欄位
+                let normalized = text;
+                // 11306 舊版結構 -> 新版結構
+                // 壹、主席報告 -> 貳、主席報告 (假設 11501 的 壹 是頒獎)
+                // 參、本次會議 -> 肆、本次會議 (關鍵修正)
+                // 肆、臨時動議 -> 伍、臨時動議
+                // 伍、下次會議 -> 陸、下次會議
+                // 陸、主席結論 -> 柒、主席結論
+                // 柒、散會 -> 捌、散會
+
+                // 注意順序，避免重複替換 (例如先把 陸 換成 柒，然後又把 伍 換成 陸)
+                // 使用取代時，最好加上 ^ 或 \n 確保是行首
+                // 但因為 mammoth 轉出來的文字可能會有不可見字元，用寬鬆一點的 regex
+                
+                // 先處理最大的位移
+                normalized = normalized.replace(/(^|\n)\s*柒、/g, "$1捌、");
+                normalized = normalized.replace(/(^|\n)\s*陸、/g, "$1柒、");
+                normalized = normalized.replace(/(^|\n)\s*伍、/g, "$1陸、");
+                normalized = normalized.replace(/(^|\n)\s*肆、/g, "$1伍、");
+                // *** 關鍵：把「參、本次會議...」轉為「肆、...」 ***
+                normalized = normalized.replace(/(^|\n)\s*參、/g, "$1肆、");
+                normalized = normalized.replace(/(^|\n)\s*貳、/g, "$1參、");
+                normalized = normalized.replace(/(^|\n)\s*壹、/g, "$1貳、");
+
+                return normalized;
+            }
+
             async function loadMeetingData(rowIndex, url) {
+                // ... (保持原樣，這部分處理從 Google Sheet 讀回來的資料)
                 const formTitle = document.getElementById('formTitle');
                 const deleteButton = document.getElementById('deleteButton');
                 const rowIndexInput = document.getElementById('rowIndex');
@@ -494,15 +545,10 @@
                     const result = await response.json();
                     if (result.success) {
                         showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存！', 'success');
-                        
                         setTimeout(() => {
-                           try {
-                               window.location.href = 'index.html'; 
-                           } catch (e) {
-                               console.warn('無法導航至 index.html (可能是預覽環境限制):', e);
-                           }
+                           try { window.location.href = 'index.html'; } 
+                           catch (e) { console.warn('無法導航:', e); }
                         }, 2000);
-
                     } else {
                         showMessage('儲存失敗: ' + (result.message || '未知錯誤'), 'error');
                     }
@@ -516,23 +562,13 @@
                 const modal = document.getElementById('deleteConfirmModal');
                 const confirmBtn = document.getElementById('confirmDeleteButton');
                 const cancelBtn = document.getElementById('cancelDeleteButton');
-
                 modal.classList.add('flex');
-
                 const newConfirmBtn = confirmBtn.cloneNode(true);
                 confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
                 const newCancelBtn = cancelBtn.cloneNode(true);
                 cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-
-                newConfirmBtn.addEventListener('click', () => {
-                    callback(true);
-                    hideDeleteConfirm();
-                });
-                newCancelBtn.addEventListener('click', () => {
-                    callback(false);
-                    hideDeleteConfirm();
-                });
+                newConfirmBtn.addEventListener('click', () => { callback(true); hideDeleteConfirm(); });
+                newCancelBtn.addEventListener('click', () => { callback(false); hideDeleteConfirm(); });
             }
 
             function hideDeleteConfirm() {
@@ -570,7 +606,7 @@
                 document.getElementById('chairman').value = '陳志成';
             }
 
-            // *** 重點修改：檔案解析邏輯 (深度清洗特殊字元 + 阻擋圖片轉碼) ***
+            // *** 檔案解析邏輯 (深度清洗 + 正規化 + 阻擋圖片) ***
             parseFileButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
@@ -589,40 +625,34 @@
                     if (file.name.endsWith('.docx')) {
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => {
-                                // *** 關鍵設定：阻擋圖片轉為 Base64，避免 Payload 過大 ***
                                 var options = {
                                     convertImage: mammoth.images.imgElement(function(image) {
-                                        return Promise.resolve({ src: "" }); // 回傳空字串，丟棄圖片資料
+                                        return Promise.resolve({ src: "" }); 
                                     })
                                 };
                                 
                                 mammoth.convertToHtml({ arrayBuffer: e.target.result }, options)
                                     .then(result => {
                                         let html = result.value;
-                                        
-                                        // 1. 基礎 HTML 結構整理
                                         html = html.replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n\n'); 
                                         html = html.replace(/<\/tr>/gi, '\n');
                                         html = html.replace(/<\/(td|th)>/gi, '  '); 
                                         html = html.replace(/<br\s*\/?>/gi, '\n');
                                         
-                                        // 2. 移除所有 HTML 標籤
                                         let text = html.replace(/<[^>]+>/g, '');
-                                        
-                                        // 3. 解碼 HTML 實體
                                         const doc = new DOMParser().parseFromString(text, 'text/html');
                                         text = doc.body.textContent || "";
-
-                                        // 4. *** 深度清洗：移除怪異控制字元 ***
-                                        // \x0b (Vertical Tab) is Word Shift+Enter
-                                        // 包含您提到的 ↵ 符號
                                         text = text.replace(/[\x0b\f\u2028\u2029]/g, '\n');
-                                        
-                                        // 5. *** 針對使用者指定符號進行正規化 ***
                                         text = text.replace(/≧/g, '>=');
                                         text = text.replace(/→/g, '->');
                                         
-                                        // 6. 正規化並切除行首空白
+                                        // *** 應用章節正規化 (解決 11306 問題) ***
+                                        // 如果偵測到舊版 "參、本次會議"，自動轉成 "肆、本次會議"
+                                        if (text.includes("參、本次會議報告及討論事項")) {
+                                            text = normalizeMeetingText(text);
+                                            console.log("偵測到舊版格式，已自動正規化章節編號。");
+                                        }
+
                                         const lines = text.split(/\r\n|\r|\n/);
                                         const cleanedLines = lines
                                             .map(line => line.trim()) 
@@ -708,15 +738,10 @@
                         const result = await response.json();
                         if (result.success) {
                             showMessage('會議紀錄已成功刪除！', 'success');
-                            
                             setTimeout(() => {
-                               try {
-                                   window.location.href = 'index.html';
-                               } catch (e) {
-                                   console.warn('無法導航至 index.html (可能是預覽環境限制):', e);
-                               }
+                               try { window.location.href = 'index.html'; } 
+                               catch (e) { console.warn('無法導航:', e); }
                             }, 2000);
-
                         } else {
                             showMessage('刪除失敗: ' + (result.message || '未知錯誤'), 'error');
                         }
