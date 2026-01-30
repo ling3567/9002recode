@@ -169,11 +169,11 @@
 </head>
 <body class="bg-sky-50 flex flex-col items-center min-h-screen p-4">
 
-    <!-- 新增會議內容按鈕 (固定在右上角) -->
-    <a id="addMeetingButton"
+    <!-- 修改：使用 button 並透過 JS 導航，避免 404 -->
+    <button type="button" id="addMeetingButton"
        class="fixed top-4 right-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out text-base z-50 cursor-pointer">
         新增會議內容
-    </a>
+    </button>
 
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 mb-8 mt-16 md:mt-4">
         <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">醫學教育委員會會議紀錄查詢</h1>
@@ -305,7 +305,9 @@
             const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
 
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
-            const MEETING_INPUT_PAGE_URL = 'meeting_form.html';
+            
+            // *** 修正：連結檔案名稱改為 GitHub 上存在的 meeting-record-form.html ***
+            const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
 
             let currentNavYear = getDefaultRocYear();
             
@@ -324,7 +326,6 @@
                 prevYearButton.disabled = currentNavYear <= 110; 
             }
 
-            // *** 修正：確保按鈕容器存在再執行操作 ***
             function createMonthButtons(year) {
                 if (!monthQuickNavButtons) {
                     console.error("Month nav buttons container not found!");
@@ -367,7 +368,7 @@
 
             prevYearButton.addEventListener('click', () => { 
                 updateMonthNav(currentNavYear - 1); 
-                createMonthButtons(currentNavYear); // 確保按鈕內容也更新年份
+                createMonthButtons(currentNavYear); 
             });
             nextYearButton.addEventListener('click', () => { 
                 updateMonthNav(currentNavYear + 1); 
@@ -439,7 +440,6 @@
                 const wrapper = document.createElement('div');
                 wrapper.innerHTML = htmlContent;
                 
-                // 使用 childNodes 遍歷所有節點 (包含純文字和元素)
                 const nodes = Array.from(wrapper.childNodes);
                 let hasVisibleContent = false;
 
@@ -449,21 +449,18 @@
                     
                     if (matches) {
                         hasVisibleContent = true;
-                        if (node.nodeType === 1) { // 元素節點 (如 <p> 或 <div>)
+                        if (node.nodeType === 1) { 
                              highlightTextInElement(node, keyword);
-                        } else if (node.nodeType === 3) { // 文字節點
-                             // 將文字節點包裝成 span 以便高亮
+                        } else if (node.nodeType === 3) { 
                              const span = document.createElement('span');
                              span.innerHTML = highlightKeywordInHTML(node.nodeValue, keyword);
                              node.parentNode.replaceChild(span, node);
                         }
                     } else {
-                        // 如果該節點完全不包含關鍵字，直接移除
                         node.remove();
                     }
                 });
 
-                // 如果過濾後沒有任何內容，回傳空字串
                 if (!hasVisibleContent || wrapper.innerHTML.trim() === '') {
                     return '';
                 }
@@ -516,7 +513,6 @@
                 return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
             }
 
-            // *** 修正：日期格式化 (排除 undefined 字串) ***
             function formatDate(dateString) {
                 if (!dateString || dateString === 'undefined') return '無';
                 try {
@@ -531,7 +527,6 @@
                 }
             }
 
-            // *** 修正：時間格式化 (排除 undefined 字串) ***
             function formatTime(timeString) {
                 if (!timeString || timeString === 'undefined') return '無';
                 try {
@@ -549,7 +544,6 @@
                 }
             }
 
-            // 舊版格式化函數 (略作縮減以節省篇幅)
             function formatLines(text, keyword) { 
                 if (!text) return '';
                 const lines = text.split('\n').map(line => line.trimEnd()).filter(line => line.trim() !== '');
@@ -632,7 +626,7 @@
                 }).join('');
             }
 
-            function applyNumberingClasses(container) { /* ... 保持不變 ... */
+            function applyNumberingClasses(container) {
                 if (!container) return;
                 const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
                 targets.forEach(element => {
@@ -664,7 +658,7 @@
                 return false;
             }
 
-            function parseAttachments(meeting) { /* ... 保持不變 ... */
+            function parseAttachments(meeting) { 
                 const fromStructured = Array.isArray(meeting.attachments) ? meeting.attachments : Array.isArray(meeting['附件']) ? meeting['附件'] : null;
                 if (fromStructured) {
                     const structuredAttachments = fromStructured.map(item => ({ code: (item.code || item['附件代碼'] || '').trim(), name: (item.name || item['附件名稱'] || '').trim(), url: (item.url || item['附件網址'] || item.link || '').trim(), })).filter(item => item.url);
@@ -777,7 +771,6 @@
                                         let sectionContentHtml = '';
 
                                         if (isHTML) {
-                                            // *** 關鍵修改：使用更嚴謹的過濾邏輯 ***
                                             if (isKeywordSearch && content.toLowerCase().includes(lowerKeyword)) {
                                                 sectionContentHtml = filterAndHighlightHTML(content, keyword);
                                             } else {
