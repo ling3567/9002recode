@@ -111,7 +111,7 @@
             line-height: 1.75 !important; /* 增加行距 */
         }
 
-        /* 新版編輯器的卡片樣式 */
+        /* 新版編輯器的卡片樣式 - 確保在查詢頁面也能正確顯示 */
         .editor-card {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -165,6 +165,61 @@
             padding-left: 0 !important;
             margin-left: 0 !important;
         }
+
+        /* 附件連結樣式 */
+        .attachment-link {
+            display: inline-flex;
+            align-items: center;
+            color: #2563eb; /* blue-600 */
+            font-weight: 500;
+            text-decoration: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background-color: #eff6ff; /* blue-50 */
+            border: 1px solid #bfdbfe; /* blue-200 */
+            transition: all 0.2s;
+            margin: 0 4px;
+        }
+        .attachment-link:hover {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1d4ed8; /* blue-700 */
+            text-decoration: none;
+        }
+        .attachment-link svg {
+            margin-right: 4px;
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 內文附件顯著標示 (藍色膠囊樣式) */
+        .inline-attachment-ref {
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e40af; /* blue-800 */
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 9999px; /* 圓角膠囊 */
+            font-size: 0.9em;
+            text-decoration: none;
+            border: 1px solid #bfdbfe; /* blue-200 */
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s ease;
+        }
+        .inline-attachment-ref:hover {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            border-color: #2563eb;
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* 修正：移除小圖示 */
+        .inline-attachment-ref::after {
+            content: none;
+        }
     </style>
 </head>
 <body class="bg-sky-50 flex flex-col items-center min-h-screen p-4">
@@ -187,7 +242,7 @@
                     <!-- 修改此處：標題在上，年份在下 -->
                     <div class="flex flex-col items-center">
                         <p class="text-xs tracking-wider text-blue-600 uppercase whitespace-nowrap">快速月份導覽</p>
-                        <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800 whitespace-nowrap">114 年</p>
+                        <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800 whitespace-nowrap">113 年</p>
                     </div>
                     <button id="nextYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
                         <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -305,11 +360,9 @@
             const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
 
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
-            
-            // *** 修正：連結檔案名稱改為 GitHub 上存在的 meeting-record-form.html ***
             const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
 
-            let currentNavYear = getDefaultRocYear();
+            let currentNavYear = getDefaultRocYear() < 113 ? 113 : getDefaultRocYear(); 
             
             // --- 年份導覽邏輯 ---
             function getDefaultRocYear() {
@@ -322,17 +375,16 @@
                 const now = new Date();
                 const currentAdYear = now.getFullYear();
                 const currentRocYear = currentAdYear - 1911;
+                
                 nextYearButton.disabled = currentNavYear >= currentRocYear;
-                prevYearButton.disabled = currentNavYear <= 110; 
+                prevYearButton.disabled = currentNavYear <= 113; 
             }
 
+            // ... (createMonthButtons, updateMonthNav logic remains same) ...
             function createMonthButtons(year) {
-                if (!monthQuickNavButtons) {
-                    console.error("Month nav buttons container not found!");
-                    return;
-                }
+                if (!monthQuickNavButtons) return;
                 monthQuickNavButtons.innerHTML = '';
-                const months = Array.from({ length: 12 }, (_, index) => index + 1); // 1 到 12 月
+                const months = Array.from({ length: 12 }, (_, index) => index + 1);
 
                 months.forEach(month => {
                     const button = document.createElement('button');
@@ -343,7 +395,6 @@
                         <span class="block text-xs text-blue-600 whitespace-nowrap" data-role="year-label">${year} 年</span>
                         <span class="block text-sm font-semibold text-blue-800 whitespace-nowrap">${month} 月</span>
                     `;
-                    
                     button.addEventListener('click', handleMonthClick);
                     monthQuickNavButtons.appendChild(button);
                 });
@@ -351,31 +402,21 @@
 
             function updateMonthNav(year, availableMonths = new Set()) {
                 if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
-                
-                const yearToDisplay = year || getDefaultRocYear();
+                const yearToDisplay = year || 113; 
                 currentNavYear = yearToDisplay;
                 monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
-                
                 monthQuickNavButtons.querySelectorAll('button').forEach(button => {
                     button.disabled = false;
                     const yearLabel = button.querySelector('[data-role="year-label"]');
-                    if (yearLabel) {
-                        yearLabel.textContent = `${yearToDisplay} 年`;
-                    }
+                    if (yearLabel) yearLabel.textContent = `${yearToDisplay} 年`;
                 });
                 updateYearNavButtons();
             }
 
-            prevYearButton.addEventListener('click', () => { 
-                updateMonthNav(currentNavYear - 1); 
-                createMonthButtons(currentNavYear); 
-            });
-            nextYearButton.addEventListener('click', () => { 
-                updateMonthNav(currentNavYear + 1); 
-                createMonthButtons(currentNavYear);
-            });
+            prevYearButton.addEventListener('click', () => { updateMonthNav(currentNavYear - 1); createMonthButtons(currentNavYear); });
+            nextYearButton.addEventListener('click', () => { updateMonthNav(currentNavYear + 1); createMonthButtons(currentNavYear); });
 
-            // --- 查詢功能相關邏輯 ---
+            // ... (Helper functions...)
             function showMessage(text, type = 'info') {
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
@@ -404,14 +445,10 @@
                 if (!keyword || !element) return;
                 const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedKeyword, 'gi');
-                
                 const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
                 const textNodes = [];
                 let node;
-                while(node = walker.nextNode()) {
-                    textNodes.push(node);
-                }
-                
+                while(node = walker.nextNode()) { textNodes.push(node); }
                 textNodes.forEach(textNode => {
                     const text = textNode.nodeValue;
                     if (regex.test(text)) {
@@ -432,39 +469,27 @@
                 });
             }
 
-            // *** 修正：更精確的內容過濾邏輯 ***
             function filterAndHighlightHTML(htmlContent, keyword) {
                 if (!htmlContent) return '';
                 if (!keyword) return htmlContent;
-
                 const wrapper = document.createElement('div');
                 wrapper.innerHTML = htmlContent;
-                
                 const nodes = Array.from(wrapper.childNodes);
                 let hasVisibleContent = false;
-
                 nodes.forEach(node => {
                     const text = node.textContent || '';
                     const matches = text.toLowerCase().includes(keyword.toLowerCase());
-                    
                     if (matches) {
                         hasVisibleContent = true;
-                        if (node.nodeType === 1) { 
-                             highlightTextInElement(node, keyword);
-                        } else if (node.nodeType === 3) { 
+                        if (node.nodeType === 1) { highlightTextInElement(node, keyword); } 
+                        else if (node.nodeType === 3) { 
                              const span = document.createElement('span');
                              span.innerHTML = highlightKeywordInHTML(node.nodeValue, keyword);
                              node.parentNode.replaceChild(span, node);
                         }
-                    } else {
-                        node.remove();
-                    }
+                    } else { node.remove(); }
                 });
-
-                if (!hasVisibleContent || wrapper.innerHTML.trim() === '') {
-                    return '';
-                }
-
+                if (!hasVisibleContent || wrapper.innerHTML.trim() === '') return '';
                 return wrapper.innerHTML;
             }
 
@@ -474,77 +499,34 @@
                 const year = currentNavYear;
                 const rocYear = year; 
                 const adYear = rocYear + 1911;
-
                 const startDate = `${adYear}-${month}-01`;
                 const endDate = new Date(adYear, month, 0); 
                 const formattedEndDate = `${adYear}-${month}-${String(endDate.getDate()).padStart(2, '0')}`;
-
                 startDateInput.value = startDate;
                 endDateInput.value = formattedEndDate;
                 keywordInput.value = '';
-
                 performSearch('', startDate, formattedEndDate, false);
             }
-
-            function toRocYear(date) {
-                if (!(date instanceof Date) || isNaN(date.getTime())) return null;
-                const rocYear = date.getFullYear() - 1911;
-                return rocYear > 0 ? rocYear : null;
+            function toRocYear(date) { if (!(date instanceof Date) || isNaN(date.getTime())) return null; const rocYear = date.getFullYear() - 1911; return rocYear > 0 ? rocYear : null; }
+            function parseMeetingDate(rawDate) { if (!rawDate) return null; if (rawDate instanceof Date) { return isNaN(rawDate.getTime()) ? null : rawDate; } const normalized = rawDate.toString().trim().replace(/[年月]/g, '/').replace(/日/g, '').replace(/-/g, '/').replace(/\./g, '/'); const parts = normalized.split(/[\/]/).filter(Boolean); if (parts.length >= 3) { let year = parseInt(parts[0], 10); const month = parseInt(parts[1], 10); const day = parseInt(parts[2], 10); if (!isNaN(year) && !isNaN(month) && !isNaN(day)) { if (year < 1911) year += 1911; const parsedDate = new Date(year, month - 1, day); if (!isNaN(parsedDate.getTime())) return parsedDate; } } const fallbackDate = new Date(rawDate); return isNaN(fallbackDate.getTime()) ? null : fallbackDate; }
+            function formatDate(dateString) { if (!dateString || dateString === 'undefined') return '無'; try { const date = new Date(dateString); if (isNaN(date.getTime())) return dateString; const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; } catch (e) { return dateString; } }
+            function formatTime(timeString) { if (!timeString || timeString === 'undefined') return '無'; try { const timeMatch = timeString.match(/(\d{1,2}:\d{2})/); if (timeMatch && timeMatch[1]) return timeMatch[1]; const date = new Date(`2000-01-01T${timeString}`); if (!isNaN(date.getTime())) { const hours = String(date.getHours()).padStart(2, '0'); const minutes = String(date.getMinutes()).padStart(2, '0'); return `${hours}:${minutes}`; } return timeString; } catch (e) { return timeString; } }
+            
+            function enrichContentWithLinks(htmlContent, attachments) {
+                if (!htmlContent || !attachments || attachments.length === 0) return htmlContent;
+                let enriched = htmlContent;
+                attachments.forEach((att, index) => {
+                    const code = att.code.trim(); 
+                    if (!code) return;
+                    const safeUrl = att.url.replace(/'/g, "\\'");
+                    const linkHtml = `<a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="inline-attachment-ref" title="點擊預覽 ${att.name || '附件'}">${code}</a>`;
+                    const regex = new RegExp(code, 'g');
+                    enriched = enriched.replace(regex, linkHtml);
+                });
+                return enriched;
             }
 
-            function parseMeetingDate(rawDate) {
-                if (!rawDate) return null;
-                if (rawDate instanceof Date) {
-                    return isNaN(rawDate.getTime()) ? null : rawDate;
-                }
-                const normalized = rawDate.toString().trim().replace(/[年月]/g, '/').replace(/日/g, '').replace(/-/g, '/').replace(/\./g, '/');
-                const parts = normalized.split(/[\/]/).filter(Boolean);
-                if (parts.length >= 3) {
-                    let year = parseInt(parts[0], 10);
-                    const month = parseInt(parts[1], 10);
-                    const day = parseInt(parts[2], 10);
-                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                        if (year < 1911) year += 1911;
-                        const parsedDate = new Date(year, month - 1, day);
-                        if (!isNaN(parsedDate.getTime())) return parsedDate;
-                    }
-                }
-                const fallbackDate = new Date(rawDate);
-                return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
-            }
-
-            function formatDate(dateString) {
-                if (!dateString || dateString === 'undefined') return '無';
-                try {
-                    const date = new Date(dateString);
-                    if (isNaN(date.getTime())) return dateString;
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                } catch (e) {
-                    return dateString;
-                }
-            }
-
-            function formatTime(timeString) {
-                if (!timeString || timeString === 'undefined') return '無';
-                try {
-                    const timeMatch = timeString.match(/(\d{1,2}:\d{2})/);
-                    if (timeMatch && timeMatch[1]) return timeMatch[1];
-                    const date = new Date(`2000-01-01T${timeString}`);
-                    if (!isNaN(date.getTime())) {
-                        const hours = String(date.getHours()).padStart(2, '0');
-                        const minutes = String(date.getMinutes()).padStart(2, '0');
-                        return `${hours}:${minutes}`;
-                    }
-                    return timeString;
-                } catch (e) {
-                    return timeString;
-                }
-            }
-
-            function formatLines(text, keyword) { 
+            function formatLines(text, keyword, attachments = []) { /* ... same as before ... */
                 if (!text) return '';
                 const lines = text.split('\n').map(line => line.trimEnd()).filter(line => line.trim() !== '');
                 const preface = []; const topLevelItems = []; let currentTopItem = null; let currentSubItems = [];
@@ -554,153 +536,127 @@
                     const isSubItem = /^\(\d+\)/.test(trimmedLine);
                     const isCircleItem = /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmedLine);
                     const isAlphaItem = /^\s*[a-e]\./i.test(line);
-                    if (isTopLevel) {
-                        if (currentTopItem) {
-                            if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`;
-                            topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
-                        }
-                        currentTopItem = { content: highlightKeyword(trimmedLine, keyword) };
-                        currentSubItems = [];
-                        return;
-                    }
-                    if (isSubItem) {
-                        const formattedLine = highlightKeyword(trimmedLine, keyword);
-                        if (!currentTopItem) currentTopItem = { content: formattedLine };
-                        else currentSubItems.push(`<li class="leading-relaxed">${formattedLine}</li>`);
-                        return;
-                    }
-                    if (isCircleItem || isAlphaItem) {
-                        const className = isCircleItem ? 'num-circle-1' : 'num-alpha-1';
-                        const formattedLine = highlightKeyword(trimmedLine, keyword);
-                        const paragraph = `<p class="leading-relaxed ${className}">${formattedLine}</p>`;
-                        if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += paragraph;
-                        else if (currentTopItem) currentTopItem.content += paragraph;
-                        else preface.push(paragraph);
-                        return;
-                    }
-                    const formattedLine = highlightKeyword(trimmedLine, keyword);
-                    if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += `<br>${formattedLine}`;
-                    else if (currentTopItem) currentTopItem.content += `<br>${formattedLine}`;
-                    else preface.push(`<p class="leading-relaxed">${formattedLine}</p>`);
+                    let formattedLine = highlightKeyword(trimmedLine, keyword);
+                    if (attachments && attachments.length > 0) { formattedLine = enrichContentWithLinks(formattedLine, attachments); }
+                    if (isTopLevel) { if (currentTopItem) { if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`; topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`); } currentTopItem = { content: formattedLine }; currentSubItems = []; return; }
+                    if (isSubItem) { if (!currentTopItem) currentTopItem = { content: formattedLine }; else currentSubItems.push(`<li class="leading-relaxed">${formattedLine}</li>`); return; }
+                    if (isCircleItem || isAlphaItem) { const className = isCircleItem ? 'num-circle-1' : 'num-alpha-1'; const paragraph = `<p class="leading-relaxed ${className}">${formattedLine}</p>`; if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += paragraph; else if (currentTopItem) currentTopItem.content += paragraph; else preface.push(paragraph); return; }
+                    if (currentSubItems.length > 0) currentSubItems[currentSubItems.length - 1] += `<br>${formattedLine}`; else if (currentTopItem) currentTopItem.content += `<br>${formattedLine}`; else preface.push(`<p class="leading-relaxed">${formattedLine}</p>`);
                 });
-                if (currentTopItem) {
-                    if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`;
-                    topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`);
-                }
+                if (currentTopItem) { if (currentSubItems.length > 0) currentTopItem.content += `<ol class="mt-2 space-y-1 list-none">${currentSubItems.join('')}</ol>`; topLevelItems.push(`<li class="leading-relaxed">${currentTopItem.content}</li>`); }
                 if (topLevelItems.length > 0) return `${preface.join('')}<ol class="space-y-2 list-none pl-0 ml-0">${topLevelItems.join('')}</ol>`;
                 if (preface.length > 0) return preface.join('');
-                return lines.map(line => `<p class="leading-relaxed">${highlightKeyword(line, keyword)}</p>`).join('');
+                return lines.map(line => { let c = highlightKeyword(line, keyword); if (attachments && attachments.length > 0) c = enrichContentWithLinks(c, attachments); return `<p class="leading-relaxed">${c}</p>`; }).join('');
             }
 
-            function formatDiscussionSections(text, keyword, onlyMatched = false) {
+            function formatDiscussionSections(text, keyword, isKeywordSearch = false, attachments = []) { /* ... same as before ... */
                 if (!text) return '';
                 const lowerKeyword = keyword ? keyword.toLowerCase() : '';
                 const hasKeyword = lowerKeyword.length > 0;
                 const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
                 const subsectionPattern = /^(?:[一二三四五六七八九十]+、)/;
                 const subsections = []; const preface = []; let current = null;
-                lines.forEach(line => {
-                    if (subsectionPattern.test(line)) {
-                        if (current) subsections.push(current);
-                        current = { title: line, contentLines: [] };
-                    } else if (current) current.contentLines.push(line);
-                    else preface.push(line);
-                });
+                lines.forEach(line => { if (subsectionPattern.test(line)) { if (current) subsections.push(current); current = { title: line, contentLines: [] }; } else if (current) current.contentLines.push(line); else preface.push(line); });
                 if (current) subsections.push(current);
-                if (subsections.length === 0) return formatLines(text, keyword);
+                if (subsections.length === 0) return formatLines(text, keyword, attachments);
                 let prefacedSections = [...subsections];
-                if (onlyMatched && hasKeyword) {
-                    prefacedSections = prefacedSections.filter(section => {
-                        const titleMatch = section.title.toLowerCase().includes(lowerKeyword);
-                        const contentMatch = section.contentLines.some(line => line.toLowerCase().includes(lowerKeyword));
-                        return titleMatch || contentMatch;
+                if (isKeywordSearch && hasKeyword) { prefacedSections = prefacedSections.filter(section => { const titleMatch = section.title.toLowerCase().includes(lowerKeyword); const contentMatch = section.contentLines.some(line => line.toLowerCase().includes(lowerKeyword)); return titleMatch || contentMatch; }); }
+                if (preface.length > 0 && prefacedSections.length > 0) { const shouldKeepPreface = !isKeywordSearch || !hasKeyword || preface.some(line => line.toLowerCase().includes(lowerKeyword)); if (shouldKeepPreface) prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines]; }
+                return prefacedSections.map(section => { const subsectionContent = section.contentLines.length > 0 ? formatLines(section.contentLines.join('\n'), keyword, attachments) : ''; let titleHtml = highlightKeyword(section.title, keyword); if (attachments && attachments.length > 0) titleHtml = enrichContentWithLinks(titleHtml, attachments); return `<div class="card sub-section-card mb-3"><h6 class="text-base font-semibold text-slate-800 mb-2">${titleHtml}</h6><div class="text-gray-700 leading-relaxed space-y-2">${subsectionContent}</div></div>`; }).join('');
+            }
+            function applyNumberingClasses(container) { /* ... same as before ... */
+                if (!container) return; const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
+                targets.forEach(element => { const rawText = element.textContent || ''; const text = rawText.trim(); if (/^\(\d+\)/.test(text)) element.classList.add('num-level-2'); else if (/^\d+\./.test(text)) element.classList.add('num-level-1'); else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(text)) element.classList.add('num-cn-1'); else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(text)) element.classList.add('num-circle-1'); else if (/^\s*[a-e]\./.test(rawText)) element.classList.add('num-alpha-1'); });
+            }
+
+            // *** 修正：強制重組 HTML 結構為卡片 (解決 11501 顯示問題) ***
+            // 現在支援純文字內容、包含 <br> 的內容，以及被單一 <p> 包住的內容
+            function restructureHtmlToCards(html) {
+                // 1. 如果內容為空，直接回傳
+                if (!html) return '';
+
+                // 2. 建立暫存 div 來解析 HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+
+                // 3. 取得純文字內容進行初步檢查，如果沒有「一、」開頭，就不需要重組
+                const textContent = temp.textContent;
+                if (!/[一二三四五六七八九十]+、/.test(textContent)) return html;
+
+                // 4. 將內容攤平為行陣列 (處理 <br>, <p>, <div> 等混雜情況)
+                // 這裡使用更積極的分割策略：先轉為純文字行，再重新組合
+                // 缺點是可能會丟失部分行內樣式(如顏色)，但能確保結構正確
+                // 優點是能解決截圖中「整塊文字擠在一起」的問題
+                let cleanText = temp.innerHTML
+                    .replace(/<br\s*\/?>/gi, '\n') // 將 <br> 轉為換行
+                    .replace(/<\/p>/gi, '\n')      // 將 </p> 轉為換行
+                    .replace(/<\/div>/gi, '\n')    // 將 </div> 轉為換行
+                    .replace(/<[^>]+>/g, '');      // 移除所有其他 HTML 標籤
+
+                // 處理 HTML Entity (如 &nbsp;)
+                const decoder = document.createElement('textarea');
+                decoder.innerHTML = cleanText;
+                cleanText = decoder.value;
+
+                const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l);
+
+                // 5. 開始重組卡片
+                let result = '';
+                let currentGroup = [];
+
+                lines.forEach(line => {
+                    // 偵測大標題 (允許前面有空白)
+                    if (/^\s*[一二三四五六七八九十]+、/.test(line)) {
+                        if (currentGroup.length > 0) {
+                            result += buildCardHtmlFromLines(currentGroup);
+                            currentGroup = [];
+                        }
+                    }
+                    currentGroup.push(line);
+                });
+
+                if (currentGroup.length > 0) {
+                    result += buildCardHtmlFromLines(currentGroup);
+                }
+
+                return result;
+            }
+
+            // 從純文字行建立卡片 HTML
+            function buildCardHtmlFromLines(lines) {
+                if (lines.length === 0) return '';
+                
+                // 第一行作為標題，自動加粗
+                let title = lines[0];
+                if (!title.includes('<strong>')) {
+                    title = title.replace(/^(\s*[一二三四五六七八九十]+、.*?[：:])?(.*)/, (m, p1, p2) => {
+                         if (p1) return `<strong>${p1}</strong>${p2}`;
+                         return `<strong>${m}</strong>`;
                     });
                 }
-                if (preface.length > 0 && prefacedSections.length > 0) {
-                    const shouldKeepPreface = !onlyMatched || !hasKeyword || preface.some(line => line.toLowerCase().includes(lowerKeyword));
-                    if (shouldKeepPreface) prefacedSections[0].contentLines = [...preface, ...prefacedSections[0].contentLines];
-                }
-                return prefacedSections.map(section => {
-                    const subsectionContent = section.contentLines.length > 0 ? formatLines(section.contentLines.join('\n'), keyword) : '';
-                    return `<div class="card sub-section-card mb-3"><h6 class="text-base font-semibold text-slate-800 mb-2">${highlightKeyword(section.title, keyword)}</h6><div class="text-gray-700 leading-relaxed space-y-2">${subsectionContent}</div></div>`;
+                
+                // 其餘行作為內容，套用縮排 class
+                const contentHtml = lines.slice(1).map(l => {
+                    let className = '';
+                    if (/^\(\d+\)/.test(l)) className = 'num-level-2';
+                    else if (/^\d+\./.test(l)) className = 'num-level-1';
+                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l)) className = 'num-circle-1';
+                    else if (/^\s*[a-e]\./i.test(l)) className = 'num-alpha-1';
+                    
+                    const classAttr = className ? ` class="${className}"` : '';
+                    return `<p${classAttr}>${l}</p>`;
                 }).join('');
+
+                return `<div class="editor-card"><p>${title}</p>${contentHtml}</div>`;
             }
 
-            function applyNumberingClasses(container) {
-                if (!container) return;
-                const targets = container.querySelectorAll('.meeting-section p, .meeting-section li');
-                targets.forEach(element => {
-                    const rawText = element.textContent || '';
-                    const text = rawText.trim();
-                    if (/^\(\d+\)/.test(text)) element.classList.add('num-level-2');
-                    else if (/^\d+\./.test(text)) element.classList.add('num-level-1');
-                    else if (/^(一|二|三|四|五|六|七|八|九|十)、/.test(text)) element.classList.add('num-cn-1');
-                    else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(text)) element.classList.add('num-circle-1');
-                    else if (/^\s*[a-e]\./.test(rawText)) element.classList.add('num-alpha-1');
-                });
-            }
-
-            function containsKeyword(data, keyword) {
-                if (!keyword) return true;
-                const lowerKeyword = keyword.toLowerCase();
-                const basicFields = ['會議名稱', '會議日期', '開始時間', '結束時間', '會議地點', '主席', '建立時間'];
-                for (const field of basicFields) {
-                    if (data[field] && typeof data[field] === 'string' && data[field].toLowerCase().includes(lowerKeyword)) return true;
-                }
-                const meetingSectionsFields = ['壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項', '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱'];
-                for (const field of meetingSectionsFields) {
-                    if (data[field] && data[field].toLowerCase().includes(lowerKeyword)) return true;
-                }
-                const attachments = parseAttachments(data);
-                for (const attachment of attachments) {
-                    if ((attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) || (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) || (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))) return true;
-                }
-                return false;
-            }
-
-            function parseAttachments(meeting) { 
-                const fromStructured = Array.isArray(meeting.attachments) ? meeting.attachments : Array.isArray(meeting['附件']) ? meeting['附件'] : null;
-                if (fromStructured) {
-                    const structuredAttachments = fromStructured.map(item => ({ code: (item.code || item['附件代碼'] || '').trim(), name: (item.name || item['附件名稱'] || '').trim(), url: (item.url || item['附件網址'] || item.link || '').trim(), })).filter(item => item.url);
-                    if (structuredAttachments.length > 0) return structuredAttachments;
-                }
-                const nameFieldRaw = (meeting['附件名稱'] || '').trim();
-                const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim();
-                let singleFieldRaw = (meeting['附件'] || '').trim();
-                if (!singleFieldRaw && nameFieldRaw && !linkFieldRaw) singleFieldRaw = nameFieldRaw;
-                if (singleFieldRaw) {
-                    const lines = singleFieldRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                    const attachments = [];
-                    const findUrl = (text) => { const match = text.match(/https?:\/\/\S+/); return match ? match[0] : ''; };
-                    const parseTitle = (text, index) => { const m = text.match(/^(附件[一二三四五六七八九十]+)(.+)$/); if (m) { return { code: m[1].trim(), name: m[2].trim() }; } return { code: formatAttachmentLabel(index), name: text.trim() }; };
-                    for (let i = 0; i < lines.length; i += 2) {
-                        const titleLine = lines[i] || ''; const nextLine = lines[i + 1] || '';
-                        const titleLineUrl = findUrl(titleLine); const nextLineUrl = findUrl(nextLine);
-                        if (titleLineUrl && (!nextLineUrl || nextLineUrl === titleLineUrl)) {
-                            const cleanedTitle = titleLine.replace(titleLineUrl, '').trim(); const { code, name } = parseTitle(cleanedTitle, attachments.length); attachments.push({ code, name, url: titleLineUrl });
-                            if (!nextLineUrl) { i -= 1; } continue;
-                        }
-                        if (nextLineUrl) { const { code, name } = parseTitle(titleLine, attachments.length); attachments.push({ code, name, url: nextLineUrl }); continue; }
-                    }
-                    return attachments;
-                }
-                if (!nameFieldRaw && !linkFieldRaw) return [];
-                const cleanAttachmentName = (name) => { const trimmed = (name || '').trim(); const lower = trimmed.toLowerCase(); const isInvalid = trimmed === '未命名附件' || trimmed === '無' || lower === 'n/a' || lower === 'na' || lower === 'none'; return isInvalid ? '' : trimmed; };
-                const names = nameFieldRaw ? nameFieldRaw.split(/\r?\n/).map(name => cleanAttachmentName(name)) : [];
-                const links = linkFieldRaw ? linkFieldRaw.split(/\r?\n/).map(link => link.trim()).filter(link => link !== '') : [];
-                const maxLength = Math.max(names.length, links.length);
-                const attachments = [];
-                for (let i = 0; i < maxLength; i++) {
-                    const rawName = names[i] || ''; let name = rawName; let url = links[i] || '';
-                    if (!url) { const urlMatch = rawName.match(/https?:\/\/\S+/); if (urlMatch) { url = urlMatch[0]; name = cleanAttachmentName(rawName.replace(url, '').trim()); } }
-                    name = cleanAttachmentName(name);
-                    if (url) { attachments.push({ name, url }); }
-                }
-                return attachments;
-            }
+            // ... (containsKeyword, parseAttachments, formatAttachmentLabel remain same) ...
+            function containsKeyword(data, keyword) { if (!keyword) return true; const lowerKeyword = keyword.toLowerCase(); const basicFields = ['會議名稱', '會議日期', '開始時間', '結束時間', '會議地點', '主席', '建立時間']; for (const field of basicFields) { if (data[field] && typeof data[field] === 'string' && data[field].toLowerCase().includes(lowerKeyword)) return true; } const meetingSectionsFields = ['壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項', '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論', '附件名稱']; for (const field of meetingSectionsFields) { if (data[field] && data[field].toLowerCase().includes(lowerKeyword)) return true; } const attachments = parseAttachments(data); for (const attachment of attachments) { if ((attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) || (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) || (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))) return true; } return false; }
+            function parseAttachments(meeting) { const fromStructured = Array.isArray(meeting.attachments) ? meeting.attachments : Array.isArray(meeting['附件']) ? meeting['附件'] : null; if (fromStructured) { const structuredAttachments = fromStructured.map(item => ({ code: (item.code || item['附件代碼'] || '').trim(), name: (item.name || item['附件名稱'] || '').trim(), url: (item.url || item['附件網址'] || item.link || '').trim(), })).filter(item => item.url); if (structuredAttachments.length > 0) return structuredAttachments; } const nameFieldRaw = (meeting['附件名稱'] || '').trim(); const linkFieldRaw = (meeting['附件連結'] || meeting['附件URL'] || '').trim(); let singleFieldRaw = (meeting['附件'] || '').trim(); if (!singleFieldRaw && nameFieldRaw && !linkFieldRaw) singleFieldRaw = nameFieldRaw; if (singleFieldRaw) { const lines = singleFieldRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean); const attachments = []; const findUrl = (text) => { const match = text.match(/https?:\/\/\S+/); return match ? match[0] : ''; }; const parseTitle = (text, index) => { let code = ''; let name = text; const codeMatch = text.match(/(附件[一二三四五六七八九十]+)/); if (codeMatch) { code = codeMatch[1]; name = text.replace(code, '').replace(/[()]/g, '').trim(); } else { code = formatAttachmentLabel(index); } return { code, name }; }; for (let i = 0; i < lines.length; i += 2) { const titleLine = lines[i] || ''; const nextLine = lines[i + 1] || ''; const titleLineUrl = findUrl(titleLine); const nextLineUrl = findUrl(nextLine); if (titleLineUrl && (!nextLineUrl || nextLineUrl === titleLineUrl)) { const cleanedTitle = titleLine.replace(titleLineUrl, '').trim(); const { code, name } = parseTitle(cleanedTitle, attachments.length); attachments.push({ code, name, url: titleLineUrl }); if (!nextLineUrl) { i -= 1; } continue; } if (nextLineUrl) { const { code, name } = parseTitle(titleLine, attachments.length); attachments.push({ code, name, url: nextLineUrl }); continue; } } return attachments; } if (!nameFieldRaw && !linkFieldRaw) return []; const cleanAttachmentName = (name) => { const trimmed = (name || '').trim(); const lower = trimmed.toLowerCase(); const isInvalid = trimmed === '未命名附件' || trimmed === '無' || lower === 'n/a' || lower === 'na' || lower === 'none'; return isInvalid ? '' : trimmed; }; const names = nameFieldRaw ? nameFieldRaw.split(/\r?\n/).map(name => cleanAttachmentName(name)) : []; const links = linkFieldRaw ? linkFieldRaw.split(/\r?\n/).map(link => link.trim()).filter(link => link !== '') : []; const maxLength = Math.max(names.length, links.length); const attachments = []; for (let i = 0; i < maxLength; i++) { const rawName = names[i] || ''; let name = rawName; let url = links[i] || ''; if (!url) { const urlMatch = rawName.match(/https?:\/\/\S+/); if (urlMatch) { url = urlMatch[0]; name = cleanAttachmentName(rawName.replace(url, '').trim()); } } name = cleanAttachmentName(name); if (url) { attachments.push({ name, url }); } } return attachments; }
             function formatAttachmentLabel(index) { const labels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十']; const label = labels[index] || `${index + 1}`; return `附件${label}`; }
 
             async function performSearch(keyword = '', startDate = '', endDate = '', showLatest = false) {
+                // ... (Search logic similar to before) ...
                 const isKeywordSearch = keyword.trim().length > 0;
                 let lowerKeyword = keyword.toLowerCase();
                 if (initialMessage) { initialMessage.classList.add('hidden'); }
@@ -730,16 +686,25 @@
 
                             sortedData.forEach(meeting => {
                                 if (keyword && !containsKeyword(meeting, keyword)) { return; }
+                                // ... (No meeting logic check remains same) ...
+                                if (meeting['狀態'] === '未召開') {
+                                    displayedMeetingsCount++;
+                                    const meetingDate = parseMeetingDate(meeting['會議日期']);
+                                    const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
+                                    const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
+                                    if (meetingRocYear !== null) { if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); } if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); } if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; } }
+                                    const meetingCard = document.createElement('div'); meetingCard.className = 'w-full flex justify-center items-center py-10'; meetingCard.innerHTML = `<p class="text-gray-500 text-lg">${meetingRocYear}年${parseInt(meetingMonth)}月未召開會議。</p>`;
+                                    meetingCards.push({ element: meetingCard, month: meetingMonth, rocYear: meetingRocYear });
+                                    return; 
+                                }
+
                                 displayedMeetingsCount++;
                                 const meetingDate = parseMeetingDate(meeting['會議日期']);
                                 const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
                                 const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
-                                if (meetingRocYear !== null) {
-                                    if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); }
-                                    if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); }
-                                    if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; }
-                                }
+                                if (meetingRocYear !== null) { if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); } if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); } if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; } }
 
+                                const attachments = parseAttachments(meeting); 
                                 const meetingCard = document.createElement('div'); meetingCard.className = 'mb-6';
                                 let cardHtml = `
                                     <div class="flex items-start justify-between gap-4 mb-4">
@@ -766,19 +731,25 @@
                                     if (content.trim() !== '') {
                                         const sectionExpandedClass = 'expanded'; const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${sectionIndex}`;
-                                        
                                         const isHTML = /<[a-z][\s\S]*>/i.test(content);
                                         let sectionContentHtml = '';
 
                                         if (isHTML) {
+                                            let processedHtml = content;
+                                            // *** 應用重組邏輯 ***
+                                            if (section.field === '肆、本次會議報告及討論事項' && !content.includes('editor-card')) {
+                                                processedHtml = restructureHtmlToCards(content);
+                                            }
+                                            
                                             if (isKeywordSearch && content.toLowerCase().includes(lowerKeyword)) {
-                                                sectionContentHtml = filterAndHighlightHTML(content, keyword);
+                                                let filtered = filterAndHighlightHTML(processedHtml, keyword);
+                                                sectionContentHtml = enrichContentWithLinks(filtered, attachments);
                                             } else {
-                                                sectionContentHtml = content;
+                                                sectionContentHtml = enrichContentWithLinks(processedHtml, attachments);
                                             }
                                         } else {
                                             const isDiscussionSection = section.field === '肆、本次會議報告及討論事項';
-                                            sectionContentHtml = isDiscussionSection ? formatDiscussionSections(content, keyword, isKeywordSearch) : formatLines(content, keyword);
+                                            sectionContentHtml = isDiscussionSection ? formatDiscussionSections(content, keyword, isKeywordSearch, attachments) : formatLines(content, keyword, attachments);
                                         }
 
                                         if (isKeywordSearch && section.field === '肆、本次會議報告及討論事項' && !isHTML) {
@@ -802,7 +773,7 @@
                                     }
                                 });
 
-                                const attachments = parseAttachments(meeting);
+                                // *** 修正3：附件區域文字改為「下載檔案」 ***
                                 const shouldDisplayAttachments = !isKeywordSearch || attachments.some(attachment => ((attachment.code && attachment.code.toLowerCase().includes(lowerKeyword)) || (attachment.name && attachment.name.toLowerCase().includes(lowerKeyword)) || (attachment.url && attachment.url.toLowerCase().includes(lowerKeyword))));
                                 if (attachments.length > 0 && shouldDisplayAttachments) {
                                     const attachmentId = `attachments-${meeting.rowIndex}`;
@@ -810,15 +781,21 @@
                                         const safeUrl = attachment.url.replace(/'/g, "\\'"); const attachmentLabel = formatAttachmentLabel(index);
                                         const displayCode = attachment.code && attachment.code.trim() ? attachment.code.trim() : attachmentLabel;
                                         const displayName = attachment.name ? highlightKeyword(attachment.name, keyword) : '';
-                                        const displayUrl = highlightKeyword(attachment.url, keyword);
-                                        return `<div class="leading-relaxed space-y-1"><p class="text-gray-800">${displayCode}&nbsp;&nbsp;${displayName}</p><a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="text-blue-700 hover:underline break-words">${displayUrl}</a></div>`;
+                                        return `
+                                            <div class="flex items-center gap-2 py-1">
+                                                <span class="text-gray-800 min-w-[60px] font-medium">${displayCode}</span>
+                                                <span class="text-gray-600 mr-2">${displayName}</span>
+                                                <a href="#" onclick="openDocumentViewer('${safeUrl}'); return false;" class="attachment-link">
+                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                    下載檔案
+                                                </a>
+                                            </div>
+                                        `;
                                     }).join('');
-                                    sectionsHtml += `<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200"><div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentId}"><h4 class="text-lg font-semibold text-teal-700">附件</h4><svg class="arrow-icon w-5 h-5 text-gray-600 expanded" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></div><div id="${attachmentId}" class="section-content meeting-section mt-2 text-gray-700 expanded"><div class="space-y-3">${attachmentList}</div></div></div>`;
+                                    sectionsHtml += `<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200"><div class="flex justify-between items-center cursor-pointer section-header" data-target="${attachmentId}"><h4 class="text-lg font-semibold text-teal-700">附件下載區</h4><svg class="arrow-icon w-5 h-5 text-gray-600 expanded" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></div><div id="${attachmentId}" class="section-content meeting-section mt-2 text-gray-700 expanded"><div class="space-y-2 mt-2 pl-2 border-l-2 border-blue-100">${attachmentList}</div></div></div>`;
                                 }
 
-                                if (sectionsHtml) {
-                                    cardHtml += `<div class="flex flex-col gap-3">${sectionsHtml}</div>`;
-                                }
+                                if (sectionsHtml) { cardHtml += `<div class="flex flex-col gap-3">${sectionsHtml}</div>`; }
                                 meetingCard.innerHTML = cardHtml;
                                 applyNumberingClasses(meetingCard);
                                 meetingCards.push({ element: meetingCard, month: meetingMonth, rocYear: meetingRocYear });
@@ -826,20 +803,24 @@
 
                             const targetYear = highestRocYear !== null ? highestRocYear : currentNavYear;
                             const availableMonths = monthsByYear.get(targetYear) || new Set();
+                            const monthAnchors = new Set();
                             meetingCards.forEach(({ element, month, rocYear }) => {
+                                if (rocYear === targetYear && month && !monthAnchors.has(month)) { const anchor = document.createElement('div'); anchor.id = `month-${month}`; anchor.className = 'block h-0 scroll-mt-24'; resultsContainer.appendChild(anchor); monthAnchors.add(month); }
                                 resultsContainer.appendChild(element);
                             });
                             if (displayedMeetingsCount > 0) { updateMonthNav(targetYear, availableMonths); } else { updateMonthNav(targetYear, new Set()); }
                             resultsContainer.querySelectorAll('.section-header').forEach(header => { header.addEventListener('click', (event) => { if (event.target.tagName === 'BUTTON' || event.target.tagName === 'A' || event.target.closest('A') || event.target.closest('BUTTON')) { return; } const targetId = header.dataset.target; const contentDiv = document.getElementById(targetId); const arrowIcon = header.querySelector('.arrow-icon'); if (contentDiv) { contentDiv.classList.toggle('expanded'); arrowIcon.classList.toggle('expanded'); } }); });
 
-                            if (displayedMeetingsCount === 0) { /* ... same as before ... */
-                                const noMeetingMonths = { '114': ['02', '08', '11'] }; const currentYearStr = String(currentNavYear); const searchMonth = startDate.substring(5, 7); 
+                            if (displayedMeetingsCount === 0) { 
+                                const noMeetingMonths = { '114': ['02', '08', '11'], '115': ['02'] }; 
+                                const currentYearStr = String(currentNavYear); 
+                                const searchMonth = startDate.substring(5, 7); 
                                 let noMeeting = false; if (startDate && endDate && !keyword && noMeetingMonths[currentYearStr] && noMeetingMonths[currentYearStr].includes(searchMonth)) { noMeeting = true; }
                                 if (noMeeting) { const displayMonth = parseInt(searchMonth, 10); resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`; showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info'); } 
                                 else { resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>'; showMessage('沒有找到符合條件的會議紀錄。', 'info'); }
                             } else { showMessage(`找到 ${displayedMeetingsCount} 條結果。`, 'success'); }
-                        } else { /* ... same as before ... */
-                            const noMeetingMonths = { '114': ['02', '08', '11'] }; const currentYearStr = String(currentNavYear); const searchMonth = startDate.substring(5, 7); 
+                        } else { 
+                            const noMeetingMonths = { '114': ['02', '08', '11'], '115': ['02'] }; const currentYearStr = String(currentNavYear); const searchMonth = startDate.substring(5, 7); 
                             let noMeeting = false; if (startDate && endDate && !keyword && noMeetingMonths[currentYearStr] && noMeetingMonths[currentYearStr].includes(searchMonth)) { noMeeting = true; }
                             if (noMeeting) { const displayMonth = parseInt(searchMonth, 10); resultsContainer.innerHTML = `<p class="text-gray-500 text-center">${currentNavYear}年${displayMonth}月未召開會議。</p>`; showMessage(`${currentNavYear}年${displayMonth}月未召開會議。`, 'info'); } 
                             else { resultsContainer.innerHTML = '<p class="text-gray-500 text-center">沒有找到符合條件的會議紀錄。</p>'; showMessage('沒有找到符合條件的會議紀錄。', 'info'); } updateMonthNav(currentNavYear, new Set());
@@ -859,7 +840,7 @@
             loginButton.addEventListener('click', async () => { /* ... login logic ... */ const username = usernameInput.value.trim(); const password = passwordInput.value.trim(); if (!username || !password) { loginMessage.textContent = '請輸入帳號與密碼。'; loginMessage.classList.remove('hidden'); return; } try { const params = new URLSearchParams(); params.append('action', 'login'); params.append('username', username); params.append('password', password); const response = await fetch(APPS_SCRIPT_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', }, body: params.toString(), }); const result = await response.json(); if (result.success) { loginMessage.classList.add('hidden'); loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); const targetUrl = loginButton.dataset.targetUrl || MEETING_INPUT_PAGE_URL; window.location.href = targetUrl; } else { loginMessage.textContent = '帳號或密碼錯誤，請重新輸入。'; loginMessage.classList.remove('hidden'); } } catch (error) { console.error('登入時發生錯誤：', error); loginMessage.textContent = '登入時發生錯誤，請稍後再試。'; loginMessage.classList.remove('hidden'); } });
             usernameInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') { passwordInput.focus(); } });
             passwordInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') { loginButton.click(); } });
-            window.openDocumentViewer = function(url) { /* ... viewer logic ... */ let embedUrl = url; if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) { embedUrl = url.replace(/\/edit|\/view/, '/embed'); } else if (url.includes('drive.google.com/file/d/')) { embedUrl = url.replace(/\/view\?usp=sharing/, '/preview'); } documentViewerIframe.src = embedUrl; documentViewerModal.classList.add('flex'); documentViewerModal.classList.remove('hidden'); };
+            window.openDocumentViewer = function(url) { let embedUrl = url; if (url.includes('docs.google.com/document/d/') || url.includes('docs.google.com/spreadsheets/d/') || url.includes('docs.google.com/presentation/d/')) { embedUrl = url.replace(/\/edit|\/view/, '/embed'); } else if (url.includes('drive.google.com/file/d/')) { embedUrl = url.replace(/\/view\?usp=sharing/, '/preview'); } documentViewerIframe.src = embedUrl; documentViewerModal.classList.add('flex'); documentViewerModal.classList.remove('hidden'); };
             closeDocumentViewerButton.addEventListener('click', () => { documentViewerModal.classList.add('hidden'); documentViewerModal.classList.remove('flex'); documentViewerIframe.src = ''; });
             documentViewerModal.addEventListener('click', (event) => { if (event.target === documentViewerModal) { documentViewerModal.classList.add('hidden'); documentViewerModal.classList.remove('flex'); documentViewerIframe.src = ''; } });
             
