@@ -231,12 +231,26 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
-        // *** 全域輔助函數：手動觸發排版 ***
+        // *** 全域輔助函數：手動觸發排版 (新增清洗邏輯) ***
         window.manualFormatDiscussion = function() {
             const editor = tinymce.get('currentMeetingDiscussion');
             if (editor) {
+                // 1. 取得目前內容 (可能是 HTML 或純文字)
                 let content = editor.getContent({format: 'text'}); 
+                
+                // *** 關鍵修正：如果使用者貼上了原始碼 (如 <p>一、...)，這裡將其還原為純文字 ***
+                if (content.includes('<p>') || content.includes('&lt;p&gt;')) {
+                    // 建立一個臨時 div 來解碼 HTML 實體
+                    const temp = document.createElement('div');
+                    temp.innerHTML = content;
+                    content = temp.textContent || temp.innerText || "";
+                    // 再次確保移除所有殘留標籤
+                    content = content.replace(/<[^>]+>/g, '\n');
+                }
+
                 if (!content.trim()) return;
+
+                // 2. 重新執行格式化邏輯
                 const formattedHtml = formatMeetingContent(content, 'currentMeetingDiscussion');
                 editor.setContent(formattedHtml);
             }
@@ -250,61 +264,49 @@
             return txt.value;
         }
 
-        // *** 新增：日期格式化函數 (給 input type="date" 用) ***
+        // *** 新增：日期格式化函數 ***
         function formatDateForInput(dateVal) {
             if (!dateVal) return '';
             const date = new Date(dateVal);
             if (isNaN(date.getTime())) return '';
-            
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
 
-        // *** 新增：時間格式化函數 (給 input type="time" 用) ***
+        // *** 新增：時間格式化函數 ***
         function formatTimeForInput(timeVal) {
             if (!timeVal) return '';
-            // 如果已經是 HH:mm 或 HH:mm:ss 格式字串
             if (typeof timeVal === 'string' && timeVal.includes(':')) {
                 const match = timeVal.match(/([0-9]{1,2}):([0-9]{2})/);
-                if (match) {
-                    return `${match[1].padStart(2, '0')}:${match[2]}`;
-                }
+                if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
             }
-            
-            // 嘗試解析為日期物件
             const date = new Date(timeVal);
             if (!isNaN(date.getTime())) {
                  const hours = String(date.getHours()).padStart(2, '0');
                  const minutes = String(date.getMinutes()).padStart(2, '0');
                  return `${hours}:${minutes}`;
             }
-            
-            // 嘗試解析 ISO 字串結尾的時間
             const isoDate = new Date(`1970-01-01T${timeVal}`);
             if (!isNaN(isoDate.getTime())) {
                  const hours = String(isoDate.getHours()).padStart(2, '0');
                  const minutes = String(isoDate.getMinutes()).padStart(2, '0');
                  return `${hours}:${minutes}`;
             }
-
             return '';
         }
 
         function createCardHtml(lines) {
             if (lines.length === 0) return '';
-            
             let titleHtml = lines[0];
             const headerRegex = /^([一二三四五六七八九十]+、.*?[：:])?(.*)/;
-            
             if (/^[一二三四五六七八九十]+、/.test(titleHtml)) {
                     titleHtml = titleHtml.replace(headerRegex, (match, p1, p2) => {
                     if (p1) return `<strong>${p1}</strong>${p2}`; 
                     return `<strong>${match}</strong>`; 
                 });
             }
-
             const contentHtml = lines.slice(1).map(l => {
                 let className = '';
                 if (/^\(\d+\)/.test(l)) className = 'num-level-2';
@@ -314,29 +316,24 @@
                 const classAttr = className ? ` class="${className}"` : '';
                 return `<p${classAttr}>${l}</p>`;
             }).join('');
-
             return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
         }
 
         function formatMeetingContent(text, fieldId) {
             if (!text) return '';
-
             let formatted = decodeHtmlEntities(text);
-
             let raw = formatted
                 .replace(/<br\s*\/?>/gi, '\n')
                 .replace(/<\/p>/gi, '\n')
                 .replace(/<p[^>]*>/gi, '')
                 .replace(/<\/div>/gi, '\n')
                 .replace(/<div[^>]*>/gi, '');
-
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
 
             if (fieldId === 'currentMeetingDiscussion') {
                 const cards = [];
                 let currentCardContent = [];
                 const headerRegex = /^[一二三四五六七八九十]+、/;
-
                 lines.forEach((line) => {
                     if (headerRegex.test(line)) {
                         if (currentCardContent.length > 0) {
@@ -346,15 +343,10 @@
                     }
                     currentCardContent.push(line);
                 });
-
                 if (currentCardContent.length > 0) {
                     cards.push(createCardHtml(currentCardContent));
                 }
-
-                if (cards.length === 0) {
-                    return lines.map(l => `<p>${l}</p>`).join('');
-                }
-
+                if (cards.length === 0) return lines.map(l => `<p>${l}</p>`).join('');
                 return cards.join('');
             }
 
@@ -365,10 +357,39 @@
                 else if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line)) className = 'num-circle-1';
                 else if (/^\s*[a-e]\./i.test(line)) className = 'num-alpha-1';
                 else if (/^[一二三四五六七八九十]+、/.test(line)) className = 'num-cn-1';
-
                 const classAttr = className ? ` class="${className}"` : '';
                 return `<p${classAttr}>${line}</p>`;
             }).join('');
+        }
+
+        // *** 章節正規化函數 (解決 11306 問題) ***
+        function normalizeMeetingText(text) {
+            if (!text) return "";
+            let normalized = text;
+            
+            // 偵測舊版結構特徵 (11306)
+            if (normalized.includes("壹、主席報告") && normalized.includes("參、本次會議報告及討論事項")) {
+                console.log("Detected 11306 format, normalizing...");
+                
+                // 使用唯一暫存字串避免重複取代
+                normalized = normalized.replace(/柒、\s*散會/g, "####TEMP_8####");
+                normalized = normalized.replace(/陸、\s*主席結論/g, "####TEMP_7####");
+                normalized = normalized.replace(/伍、\s*下次會議/g, "####TEMP_6####");
+                normalized = normalized.replace(/肆、\s*臨時動議/g, "####TEMP_5####");
+                normalized = normalized.replace(/參、\s*本次會議/g, "####TEMP_4####");
+                normalized = normalized.replace(/貳、\s*上次會議/g, "####TEMP_3####");
+                normalized = normalized.replace(/壹、\s*主席報告/g, "####TEMP_2####");
+                
+                // 還原為新版標題
+                normalized = normalized.replace("####TEMP_8####", "捌、散會");
+                normalized = normalized.replace("####TEMP_7####", "柒、主席結論");
+                normalized = normalized.replace("####TEMP_6####", "陸、下次會議追蹤事項");
+                normalized = normalized.replace("####TEMP_5####", "伍、臨時動議");
+                normalized = normalized.replace("####TEMP_4####", "肆、本次會議報告及討論事項");
+                normalized = normalized.replace("####TEMP_3####", "參、上次會議追蹤事項");
+                normalized = normalized.replace("####TEMP_2####", "貳、主席報告");
+            }
+            return normalized;
         }
 
         // *** DOMContentLoaded ***
@@ -410,30 +431,15 @@
                 promotion: false
             });
 
-            // *** 輔助函數定義 ***
-
             function showMessage(text, type = 'info', duration = 3000) {
                 const messageContainer = document.getElementById('messageContainer');
                 const messageText = document.getElementById('messageText');
                 if (!messageContainer || !messageText) return;
-
                 messageText.textContent = text;
                 messageContainer.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
-
-                if (type === 'success') {
-                    messageContainer.classList.add('bg-green-100', 'text-green-800');
-                } else if (type === 'error') {
-                    messageContainer.classList.add('bg-red-100', 'text-red-800');
-                } else { // info or loading
-                    messageContainer.classList.add('bg-blue-100', 'text-blue-800');
-                }
+                if (type === 'success') { messageContainer.classList.add('bg-green-100', 'text-green-800'); } else if (type === 'error') { messageContainer.classList.add('bg-red-100', 'text-red-800'); } else { messageContainer.classList.add('bg-blue-100', 'text-blue-800'); }
                 messageContainer.classList.remove('hidden');
-
-                if (duration > 0) {
-                    setTimeout(() => {
-                        messageContainer.classList.add('hidden');
-                    }, duration);
-                }
+                if (duration > 0) { setTimeout(() => { messageContainer.classList.add('hidden'); }, duration); }
             }
 
             function setFieldValue(id, value) {
@@ -447,47 +453,27 @@
                 }
             }
 
-            function normalizeMeetingText(text) {
-                if (!text) return "";
-                let normalized = text;
-                normalized = normalized.replace(/(^|\n)\s*柒、/g, "$1捌、");
-                normalized = normalized.replace(/(^|\n)\s*陸、/g, "$1柒、");
-                normalized = normalized.replace(/(^|\n)\s*伍、/g, "$1陸、");
-                normalized = normalized.replace(/(^|\n)\s*肆、/g, "$1伍、");
-                normalized = normalized.replace(/(^|\n)\s*參、/g, "$1肆、");
-                normalized = normalized.replace(/(^|\n)\s*貳、/g, "$1參、");
-                normalized = normalized.replace(/(^|\n)\s*壹、/g, "$1貳、");
-                return normalized;
-            }
-
             async function loadMeetingData(rowIndex, url) {
                 const formTitle = document.getElementById('formTitle');
                 const deleteButton = document.getElementById('deleteButton');
                 const rowIndexInput = document.getElementById('rowIndex');
                 const creationTimeInput = document.getElementById('creationTime');
                 const noMeetingCheckbox = document.getElementById('noMeetingCheckbox');
-
                 formTitle.textContent = '編輯會議內容';
                 deleteButton.classList.remove('hidden');
                 showMessage('正在載入資料...', 'info', 0);
-
                 try {
                     const fetchUrl = `${url}?action=getRecord&rowIndex=${rowIndex}`;
                     const response = await fetch(fetchUrl);
                     const result = await response.json();
-
                     if (result.success && result.data) {
                         const data = result.data;
                         setFieldValue('meetingName', data['會議名稱']);
-                        
-                        // *** 修正：套用格式化函數 ***
                         setFieldValue('meetingDate', formatDateForInput(data['會議日期']));
                         setFieldValue('startTime', formatTimeForInput(data['開始時間']));
                         setFieldValue('endTime', formatTimeForInput(data['結束時間']));
-                        
                         setFieldValue('location', data['會議地點']);
                         setFieldValue('chairman', data['主席']);
-
                         setFieldValue('awards', data['壹、頒獎表揚']);
                         setFieldValue('chairmanReport', data['貳、主席報告']);
                         setFieldValue('lastMeetingFollowUp', data['參、上次會議追蹤事項']);
@@ -495,16 +481,12 @@
                         setFieldValue('adHocMotion', data['伍、臨時動議']);
                         setFieldValue('nextMeetingFollowUp', data['陸、下次會議追蹤事項']);
                         setFieldValue('chairmanConclusion', data['柒、主席結論']);
-
                         setFieldValue('attachmentName', data['附件名稱']);
-
                         creationTimeInput.value = data['建立時間'] || '';
-
                         if (data['狀態'] === '未召開') {
                             noMeetingCheckbox.checked = true;
                             noMeetingCheckbox.dispatchEvent(new Event('change'));
                         }
-
                         rowIndexInput.value = rowIndex;
                         showMessage('資料載入成功！', 'success');
                     } else {
@@ -521,21 +503,14 @@
                 const form = document.getElementById('meetingForm');
                 const rowIndexInput = document.getElementById('rowIndex');
                 const creationTimeInput = document.getElementById('creationTime');
-
                 tinymce.triggerSave();
-
                 showMessage('正在提交資料中，請稍候...', 'info', 0);
-
                 const formData = new FormData(form);
                 const meetingData = {};
                 for (let [key, value] of formData.entries()) {
                     meetingData[key] = value;
                 }
-
-                if (!meetingData['狀態']) {
-                    meetingData['狀態'] = '';
-                }
-
+                if (!meetingData['狀態']) { meetingData['狀態'] = ''; }
                 const isUpdate = !!rowIndexInput.value;
                 if (isUpdate) {
                     meetingData.action = 'updateRecord';
@@ -547,14 +522,12 @@
                     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                     meetingData['建立時間'] = now.toISOString().slice(0, 16);
                 }
-
                 console.log('準備提交的會議資料:', meetingData);
                 try {
                     const response = await fetch(url, {
                         method: 'POST',
                         body: new URLSearchParams(meetingData),
                     });
-
                     const result = await response.json();
                     if (result.success) {
                         showMessage(isUpdate ? '會議內容已成功更新！' : '會議內容已成功儲存！', 'success');
@@ -625,24 +598,18 @@
                     showMessage('請選擇一個檔案！', 'error');
                     return;
                 }
-
                 parseFileButton.disabled = true;
                 parseFileButton.textContent = '解析中...';
                 showMessage('正在解析檔案...', 'info', 0);
-
                 try {
                     let fileContent = '';
                     const fileReader = new FileReader();
-
                     if (file.name.endsWith('.docx')) {
                         fileContent = await new Promise((resolve, reject) => {
                             fileReader.onload = (e) => {
                                 var options = {
-                                    convertImage: mammoth.images.imgElement(function(image) {
-                                        return Promise.resolve({ src: "" }); 
-                                    })
+                                    convertImage: mammoth.images.imgElement(function(image) { return Promise.resolve({ src: "" }); })
                                 };
-                                
                                 mammoth.convertToHtml({ arrayBuffer: e.target.result }, options)
                                     .then(result => {
                                         let html = result.value;
@@ -650,7 +617,6 @@
                                         html = html.replace(/<\/tr>/gi, '\n');
                                         html = html.replace(/<\/(td|th)>/gi, '  '); 
                                         html = html.replace(/<br\s*\/?>/gi, '\n');
-                                        
                                         let text = html.replace(/<[^>]+>/g, '');
                                         const doc = new DOMParser().parseFromString(text, 'text/html');
                                         text = doc.body.textContent || "";
@@ -658,16 +624,11 @@
                                         text = text.replace(/≧/g, '>=');
                                         text = text.replace(/→/g, '->');
                                         
-                                        if (text.includes("參、本次會議報告及討論事項")) {
-                                            text = normalizeMeetingText(text);
-                                            console.log("偵測到舊版格式，已自動正規化章節編號。");
-                                        }
+                                        // *** 應用章節正規化 (解決 11306 問題) ***
+                                        text = normalizeMeetingText(text);
 
                                         const lines = text.split(/\r\n|\r|\n/);
-                                        const cleanedLines = lines
-                                            .map(line => line.trim()) 
-                                            .filter(line => line.length > 0);
-
+                                        const cleanedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
                                         resolve(cleanedLines.join('\n'));
                                     })
                                     .catch(reject);
@@ -682,7 +643,6 @@
                             fileReader.readAsText(file);
                         });
                     }
-
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
                         method: 'POST',
                         body: new URLSearchParams({
@@ -690,25 +650,16 @@
                             fileContent: fileContent
                         })
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`伺服器錯誤: ${response.statusText}`);
-                    }
-
+                    if (!response.ok) { throw new Error(`伺服器錯誤: ${response.statusText}`); }
                     const result = await response.json();
-
                     if (result.success && result.data) {
                         const parsedData = result.data;
                         setFieldValue('meetingName', parsedData['會議名稱']);
-                        
-                        // *** 修正：檔案解析也使用格式化函數 (雖然解析結果通常是純文字，但保險起見) ***
                         setFieldValue('meetingDate', formatDateForInput(parsedData['會議日期']));
                         setFieldValue('startTime', formatTimeForInput(parsedData['開始時間']));
                         setFieldValue('endTime', formatTimeForInput(parsedData['結束時間']));
-                        
                         setFieldValue('location', parsedData['會議地點']);
                         setFieldValue('chairman', parsedData['主席']);
-
                         setFieldValue('awards', parsedData['壹、頒獎表揚']);
                         setFieldValue('chairmanReport', parsedData['貳、主席報告']);
                         setFieldValue('lastMeetingFollowUp', parsedData['參、上次會議追蹤事項']);
@@ -716,9 +667,7 @@
                         setFieldValue('adHocMotion', parsedData['伍、臨時動議']);
                         setFieldValue('nextMeetingFollowUp', parsedData['陸、下次會議追蹤事項']);
                         setFieldValue('chairmanConclusion', parsedData['柒、主席結論']);
-
                         setFieldValue('attachmentName', parsedData['附件名稱']);
-
                         showMessage('檔案解析成功，資料已填入表單！', 'success');
                     } else {
                         showMessage('解析失敗: ' + (result.message || '無法從檔案中解析到資料'), 'error');
@@ -732,10 +681,7 @@
                 }
             });
 
-            form.addEventListener('submit', (event) => {
-                submitForm(event, APPS_SCRIPT_WEB_APP_URL);
-            });
-
+            form.addEventListener('submit', (event) => { submitForm(event, APPS_SCRIPT_WEB_APP_URL); });
             deleteButton.addEventListener('click', () => {
                 showDeleteConfirm(async (isConfirmed) => {
                     if (!isConfirmed) return;
