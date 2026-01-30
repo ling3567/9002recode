@@ -232,24 +232,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
     <script>
         // *** 全域輔助函數：手動觸發排版 ***
-        // 這是給 "自動排版" 按鈕用的
         window.manualFormatDiscussion = function() {
             const editor = tinymce.get('currentMeetingDiscussion');
             if (editor) {
-                // 1. 取得目前內容 (可能是 HTML)
-                let content = editor.getContent({format: 'text'}); // 先取純文字以清除髒 HTML
+                let content = editor.getContent({format: 'text'}); 
                 if (!content.trim()) return;
-
-                // 2. 重新執行格式化邏輯
-                // 注意：這裡我們假設使用者貼上的是純文字，我們重新把它轉成卡片 HTML
-                // 如果內容已經是 HTML，getContent('text') 會過濾掉標籤，只剩文字，
-                // 這剛好可以讓我們重新建立乾淨的卡片結構
                 const formattedHtml = formatMeetingContent(content, 'currentMeetingDiscussion');
                 editor.setContent(formattedHtml);
             }
         };
 
-        // *** 格式化函數定義 (拉出來以便共用) ***
+        // *** 格式化函數定義 ***
         function decodeHtmlEntities(text) {
             if (!text) return text;
             const txt = document.createElement("textarea");
@@ -257,7 +250,48 @@
             return txt.value;
         }
 
-        // 建立卡片 HTML 的輔助函數
+        // *** 新增：日期格式化函數 (給 input type="date" 用) ***
+        function formatDateForInput(dateVal) {
+            if (!dateVal) return '';
+            const date = new Date(dateVal);
+            if (isNaN(date.getTime())) return '';
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // *** 新增：時間格式化函數 (給 input type="time" 用) ***
+        function formatTimeForInput(timeVal) {
+            if (!timeVal) return '';
+            // 如果已經是 HH:mm 或 HH:mm:ss 格式字串
+            if (typeof timeVal === 'string' && timeVal.includes(':')) {
+                const match = timeVal.match(/([0-9]{1,2}):([0-9]{2})/);
+                if (match) {
+                    return `${match[1].padStart(2, '0')}:${match[2]}`;
+                }
+            }
+            
+            // 嘗試解析為日期物件
+            const date = new Date(timeVal);
+            if (!isNaN(date.getTime())) {
+                 const hours = String(date.getHours()).padStart(2, '0');
+                 const minutes = String(date.getMinutes()).padStart(2, '0');
+                 return `${hours}:${minutes}`;
+            }
+            
+            // 嘗試解析 ISO 字串結尾的時間
+            const isoDate = new Date(`1970-01-01T${timeVal}`);
+            if (!isNaN(isoDate.getTime())) {
+                 const hours = String(isoDate.getHours()).padStart(2, '0');
+                 const minutes = String(isoDate.getMinutes()).padStart(2, '0');
+                 return `${hours}:${minutes}`;
+            }
+
+            return '';
+        }
+
         function createCardHtml(lines) {
             if (lines.length === 0) return '';
             
@@ -284,13 +318,11 @@
             return `<div class="editor-card"><p>${titleHtml}</p>${contentHtml}</div>`;
         }
 
-        // 核心格式化函數
         function formatMeetingContent(text, fieldId) {
             if (!text) return '';
 
             let formatted = decodeHtmlEntities(text);
 
-            // 1. 強力清洗
             let raw = formatted
                 .replace(/<br\s*\/?>/gi, '\n')
                 .replace(/<\/p>/gi, '\n')
@@ -298,10 +330,8 @@
                 .replace(/<\/div>/gi, '\n')
                 .replace(/<div[^>]*>/gi, '');
 
-            // 2. 切割並過濾空行
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
 
-            // 3. 處理 "肆" 區塊的卡片 (currentMeetingDiscussion)
             if (fieldId === 'currentMeetingDiscussion') {
                 const cards = [];
                 let currentCardContent = [];
@@ -328,7 +358,6 @@
                 return cards.join('');
             }
 
-            // 4. 其他欄位處理
             return lines.map(line => {
                 let className = '';
                 if (/^\(\d+\)/.test(line)) className = 'num-level-2';
@@ -345,7 +374,6 @@
         // *** DOMContentLoaded ***
         document.addEventListener('DOMContentLoaded', () => {
 
-            // *** 0. 初始化 TinyMCE 編輯器 ***
             tinymce.init({
                 selector: '.rich-editor',
                 language: 'zh_TW',
@@ -419,38 +447,20 @@
                 }
             }
 
-            // *** 關鍵修正：章節正規化函數 (解決 11306 問題) ***
             function normalizeMeetingText(text) {
                 if (!text) return "";
-                // 將舊版章節標題對應到新版，確保後端能抓到正確欄位
                 let normalized = text;
-                // 11306 舊版結構 -> 新版結構
-                // 壹、主席報告 -> 貳、主席報告 (假設 11501 的 壹 是頒獎)
-                // 參、本次會議 -> 肆、本次會議 (關鍵修正)
-                // 肆、臨時動議 -> 伍、臨時動議
-                // 伍、下次會議 -> 陸、下次會議
-                // 陸、主席結論 -> 柒、主席結論
-                // 柒、散會 -> 捌、散會
-
-                // 注意順序，避免重複替換 (例如先把 陸 換成 柒，然後又把 伍 換成 陸)
-                // 使用取代時，最好加上 ^ 或 \n 確保是行首
-                // 但因為 mammoth 轉出來的文字可能會有不可見字元，用寬鬆一點的 regex
-                
-                // 先處理最大的位移
                 normalized = normalized.replace(/(^|\n)\s*柒、/g, "$1捌、");
                 normalized = normalized.replace(/(^|\n)\s*陸、/g, "$1柒、");
                 normalized = normalized.replace(/(^|\n)\s*伍、/g, "$1陸、");
                 normalized = normalized.replace(/(^|\n)\s*肆、/g, "$1伍、");
-                // *** 關鍵：把「參、本次會議...」轉為「肆、...」 ***
                 normalized = normalized.replace(/(^|\n)\s*參、/g, "$1肆、");
                 normalized = normalized.replace(/(^|\n)\s*貳、/g, "$1參、");
                 normalized = normalized.replace(/(^|\n)\s*壹、/g, "$1貳、");
-
                 return normalized;
             }
 
             async function loadMeetingData(rowIndex, url) {
-                // ... (保持原樣，這部分處理從 Google Sheet 讀回來的資料)
                 const formTitle = document.getElementById('formTitle');
                 const deleteButton = document.getElementById('deleteButton');
                 const rowIndexInput = document.getElementById('rowIndex');
@@ -469,9 +479,12 @@
                     if (result.success && result.data) {
                         const data = result.data;
                         setFieldValue('meetingName', data['會議名稱']);
-                        setFieldValue('meetingDate', data['會議日期']);
-                        setFieldValue('startTime', data['開始時間']);
-                        setFieldValue('endTime', data['結束時間']);
+                        
+                        // *** 修正：套用格式化函數 ***
+                        setFieldValue('meetingDate', formatDateForInput(data['會議日期']));
+                        setFieldValue('startTime', formatTimeForInput(data['開始時間']));
+                        setFieldValue('endTime', formatTimeForInput(data['結束時間']));
+                        
                         setFieldValue('location', data['會議地點']);
                         setFieldValue('chairman', data['主席']);
 
@@ -606,7 +619,6 @@
                 document.getElementById('chairman').value = '陳志成';
             }
 
-            // *** 檔案解析邏輯 (深度清洗 + 正規化 + 阻擋圖片) ***
             parseFileButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
@@ -646,8 +658,6 @@
                                         text = text.replace(/≧/g, '>=');
                                         text = text.replace(/→/g, '->');
                                         
-                                        // *** 應用章節正規化 (解決 11306 問題) ***
-                                        // 如果偵測到舊版 "參、本次會議"，自動轉成 "肆、本次會議"
                                         if (text.includes("參、本次會議報告及討論事項")) {
                                             text = normalizeMeetingText(text);
                                             console.log("偵測到舊版格式，已自動正規化章節編號。");
@@ -690,9 +700,12 @@
                     if (result.success && result.data) {
                         const parsedData = result.data;
                         setFieldValue('meetingName', parsedData['會議名稱']);
-                        setFieldValue('meetingDate', parsedData['會議日期']);
-                        setFieldValue('startTime', parsedData['開始時間']);
-                        setFieldValue('endTime', parsedData['結束時間']);
+                        
+                        // *** 修正：檔案解析也使用格式化函數 (雖然解析結果通常是純文字，但保險起見) ***
+                        setFieldValue('meetingDate', formatDateForInput(parsedData['會議日期']));
+                        setFieldValue('startTime', formatTimeForInput(parsedData['開始時間']));
+                        setFieldValue('endTime', formatTimeForInput(parsedData['結束時間']));
+                        
                         setFieldValue('location', parsedData['會議地點']);
                         setFieldValue('chairman', parsedData['主席']);
 
