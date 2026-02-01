@@ -141,34 +141,23 @@
             color: #1d4ed8; /* blue-700 */
             text-decoration: none;
         }
+        /* 移除 SVG 圖示 */
         .attachment-link svg {
-            margin-right: 4px;
-            width: 14px;
-            height: 14px;
+            display: none;
         }
 
         /* 內文附件顯著標示 (藍色膠囊樣式，無圖示) */
         .inline-attachment-ref {
-            display: inline-flex;
-            align-items: center;
-            vertical-align: middle;
-            background-color: #eff6ff; /* blue-50 */
-            color: #1d4ed8; /* blue-700 */
-            font-weight: 600;
-            padding: 1px 8px;
-            border-radius: 9999px; /* 圓角膠囊 */
-            font-size: 0.9em;
+            color: #2563eb; /* blue-600 */
+            font-weight: 600; /* 粗體 */
             text-decoration: none;
-            border: 1px solid #bfdbfe; /* blue-200 */
             cursor: pointer;
             margin: 0 2px;
-            transition: all 0.2s ease;
+            transition: color 0.2s ease;
         }
         .inline-attachment-ref:hover {
-            background-color: #dbeafe; /* blue-100 */
-            color: #1e40af; /* blue-800 */
-            border-color: #93c5fd; /* blue-300 */
-            text-decoration: none;
+            color: #1d4ed8; /* blue-700 */
+            text-decoration: underline; /* 滑鼠移過去加底線 */
         }
         /* 移除小圖示 */
         .inline-attachment-ref::after {
@@ -205,7 +194,6 @@
                     <button id="prevYearButton" type="button" class="p-2 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-transparent">
                         <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
-                    <!-- 修改此處：標題在上，年份在下 -->
                     <div class="flex flex-col items-center">
                         <p class="text-xs tracking-wider text-blue-600 uppercase whitespace-nowrap">快速月份導覽</p>
                         <p id="monthQuickNavYear" class="text-lg font-semibold text-blue-800 whitespace-nowrap">113 年</p>
@@ -214,7 +202,6 @@
                         <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
-                <!-- 月份按鈕 -->
                 <div id="monthQuickNavButtons" class="grid w-full grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-12"></div>
             </div>
         </section>
@@ -245,7 +232,7 @@
                 </button>
             </div>
         </div>
-        <!-- 訊息顯示區塊 -->
+        
         <div id="messageContainer" class="mt-4 p-4 rounded-md hidden">
             <p id="messageText" class="text-center"></p>
         </div>
@@ -253,7 +240,6 @@
 
     <div id="resultsContainer" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl border border-gray-200 flex-grow scrollable-content overflow-y-auto">
         <p class="text-gray-500 text-center" id="initialMessage">請輸入關鍵字、選擇日期區間或點擊「顯示所有會議」來查詢。</p>
-        <!-- 查詢結果將顯示在這裡 -->
     </div>
 
     <!-- 登入視窗 -->
@@ -292,7 +278,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ... (Variable declarations) ...
+            // 變數定義區
             const keywordInput = document.getElementById('keywordInput');
             const startDateInput = document.getElementById('startDateInput');
             const endDateInput = document.getElementById('endDateInput');
@@ -320,6 +306,7 @@
 
             const documentViewerModal = document.getElementById('documentViewerModal');
             const documentViewerIframe = document.getElementById('documentViewerIframe');
+            // 確保變數宣告
             const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
 
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
@@ -327,23 +314,20 @@
 
             let currentNavYear = getDefaultRocYear() < 113 ? 113 : getDefaultRocYear(); 
             
-            // --- 年份導覽邏輯 ---
             function getDefaultRocYear() {
                 const now = new Date();
                 const rocYear = now.getFullYear() - 1911;
                 return rocYear > 0 ? rocYear : now.getFullYear(); 
             }
 
+            // *** 修正：解除年份上限限制 (Allow future years) ***
             function updateYearNavButtons() {
-                const now = new Date();
-                const currentAdYear = now.getFullYear();
-                const currentRocYear = currentAdYear - 1911;
-                
-                nextYearButton.disabled = currentNavYear >= currentRocYear;
+                // 不再限制 nextYearButton，讓使用者可以點到 115 甚至以後
+                nextYearButton.disabled = false;
+                // 往前限制在 113 年
                 prevYearButton.disabled = currentNavYear <= 113; 
             }
 
-            // ... (createMonthButtons, updateMonthNav logic remains same) ...
             function createMonthButtons(year) {
                 if (!monthQuickNavButtons) return;
                 monthQuickNavButtons.innerHTML = '';
@@ -365,19 +349,23 @@
 
             function updateMonthNav(year, availableMonths = new Set()) {
                 if (!monthQuickNavButtons || !monthQuickNavYearLabel) return;
-                const yearToDisplay = year || 113; 
+                // 直接使用傳入的 year，不再限制
+                const yearToDisplay = year; 
                 currentNavYear = yearToDisplay;
                 monthQuickNavYearLabel.textContent = `${yearToDisplay} 年`;
+                
+                // 更新所有按鈕上的年份標籤
                 monthQuickNavButtons.querySelectorAll('button').forEach(button => {
                     button.disabled = false;
                     const yearLabel = button.querySelector('[data-role="year-label"]');
-                    if (yearLabel) yearLabel.textContent = `${yearToDisplay} 年`;
+                    if (yearLabel) {
+                        yearLabel.textContent = `${yearToDisplay} 年`;
+                    }
                 });
                 updateYearNavButtons();
                 updateMonthButtonStyles(yearToDisplay);
             }
 
-            // *** 修正：完全移除硬寫月份，只依賴資料庫 ***
             async function updateMonthButtonStyles(year) {
                 const adYear = year + 1911;
                 const startDate = `${adYear}-01-01`;
@@ -396,9 +384,17 @@
                     
                     if (result.success && result.data && result.data.length > 0) {
                         result.data.forEach(meeting => {
-                            // *** 修正：加入 .trim() 以容錯空白 ***
                             const status = (meeting['狀態'] || '').trim();
-                            if (status === '未召開') {
+                            
+                            // 判斷未召開：狀態標記 或 內容全空
+                            let isNotConvened = status.includes('未召開');
+                            if (!isNotConvened) {
+                                const contentFields = ['壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項', '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論'];
+                                const hasContent = contentFields.some(field => meeting[field] && meeting[field].trim().length > 0);
+                                if (!hasContent) isNotConvened = true;
+                            }
+
+                            if (isNotConvened) {
                                 const mDate = parseMeetingDate(meeting['會議日期']);
                                 if (mDate) { 
                                     const m = String(mDate.getMonth() + 1).padStart(2, '0'); 
@@ -535,7 +531,7 @@
                     if (!code) return;
                     const safeUrl = att.url.replace(/'/g, "\\'");
                     
-                    // 改為直接使用 target="_blank"，移除 onclick 呼叫 iframe
+                    // 改為直接使用 target="_blank"
                     const linkHtml = `<a href="${safeUrl}" target="_blank" class="inline-attachment-ref" title="點擊檢視 ${att.name || '附件'}">${code}</a>`;
                     
                     const regex = new RegExp(code, 'g');
@@ -687,15 +683,37 @@
 
                             sortedData.forEach(meeting => {
                                 if (keyword && !containsKeyword(meeting, keyword)) { return; }
-                                // ... (No meeting logic check - using trimmed check) ...
+                                
+                                // *** 關鍵修正：判斷未召開 ***
                                 const status = (meeting['狀態'] || '').trim();
-                                if (status === '未召開') {
+                                const contentFields = ['壹、頒獎表揚', '貳、主席報告', '參、上次會議追蹤事項', '肆、本次會議報告及討論事項', '伍、臨時動議', '陸、下次會議追蹤事項', '柒、主席結論'];
+                                const hasContent = contentFields.some(field => meeting[field] && meeting[field].trim().length > 0);
+                                const isNotConvened = status.includes('未召開') || !hasContent;
+
+                                if (isNotConvened) {
                                     displayedMeetingsCount++;
                                     const meetingDate = parseMeetingDate(meeting['會議日期']);
                                     const meetingMonth = meetingDate ? String(meetingDate.getMonth() + 1).padStart(2, '0') : null;
                                     const meetingRocYear = meetingDate ? toRocYear(meetingDate) : null;
                                     if (meetingRocYear !== null) { if (!monthsByYear.has(meetingRocYear)) { monthsByYear.set(meetingRocYear, new Set()); } if (meetingMonth) { monthsByYear.get(meetingRocYear).add(meetingMonth); } if (highestRocYear === null || meetingRocYear > highestRocYear) { highestRocYear = meetingRocYear; } }
-                                    const meetingCard = document.createElement('div'); meetingCard.className = 'w-full flex justify-center items-center py-10'; meetingCard.innerHTML = `<p class="text-gray-500 text-3xl font-bold tracking-wider">${meetingRocYear}年${parseInt(meetingMonth)}月未召開會議。</p>`;
+                                    
+                                    const meetingCard = document.createElement('div'); 
+                                    meetingCard.className = 'mb-6';
+                                    
+                                    const cardHeader = `
+                                        <div class="flex items-start justify-between gap-4 mb-4">
+                                            <h3 class="text-2xl font-semibold text-blue-900">${highlightKeyword(meeting['會議名稱'] || '無會議名稱', keyword)}</h3>
+                                            <button class="edit-button px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg shadow-sm hover:bg-gray-300 transition-colors duration-150 ease-in-out" data-row-index="${meeting.rowIndex}">編輯</button>
+                                        </div>
+                                    `;
+                                    
+                                    const notConvenedContent = `
+                                        <div class="w-full flex justify-center items-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300 shadow-sm">
+                                            <p class="text-gray-500 text-3xl font-bold tracking-wider">本月未召開會議</p>
+                                        </div>
+                                    `;
+                                    
+                                    meetingCard.innerHTML = cardHeader + notConvenedContent;
                                     meetingCards.push({ element: meetingCard, month: meetingMonth, rocYear: meetingRocYear });
                                     return; 
                                 }
@@ -788,7 +806,6 @@
                                                 <span class="text-gray-800 min-w-[60px] font-medium">${displayCode}</span>
                                                 <span class="text-gray-600 mr-2">${displayName}</span>
                                                 <a href="${safeUrl}" target="_blank" class="attachment-link">
-                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                     下載檔案
                                                 </a>
                                             </div>
