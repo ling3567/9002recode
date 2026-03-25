@@ -268,14 +268,6 @@
         </div>
     </div>
 
-    <!-- 文件預覽模態視窗 -->
-    <div id="documentViewerModal" class="flex-col">
-        <div class="document-viewer-content">
-            <button class="document-viewer-close" id="closeDocumentViewer">&times;</button>
-            <iframe id="documentViewerIframe" class="document-viewer-iframe"></iframe>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // 變數定義區
@@ -303,11 +295,6 @@
             const loginButton = document.getElementById('loginButton');
             const cancelLoginButton = document.getElementById('cancelLoginButton');
             const loginMessage = document.getElementById('loginMessage');
-
-            const documentViewerModal = document.getElementById('documentViewerModal');
-            const documentViewerIframe = document.getElementById('documentViewerIframe');
-            // 確保變數宣告
-            const closeDocumentViewerButton = document.getElementById('closeDocumentViewer');
 
             const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxgkjyZdtiSBDMuHtuwJweCeyxXVzGnn8VtwnvhXwyQMcPthHpdtoAIZgeeAWixJICm/exec';
             const MEETING_INPUT_PAGE_URL = 'meeting-record-form.html';
