@@ -739,13 +739,17 @@
                                         const sectionExpandedClass = 'expanded'; const sectionArrowClass = 'expanded';
                                         const sectionId = `section-${meeting.rowIndex}-${sectionIndex}`;
                                         const isHTML = /<[a-z][\s\S]*>/i.test(content);
+                                        // 肆、伍 使用相同的卡片式條列排版
+                                        const isCardSection = section.field === '肆、本次會議報告及討論事項' || section.field === '伍、臨時動議';
                                         let sectionContentHtml = '';
 
                                         if (isHTML) {
                                             // *** 應用 HTML 卡片重整邏輯 ***
                                             let processedHtml = content;
-                                            if (section.field === '肆、本次會議報告及討論事項' && !content.includes('editor-card')) {
+                                            if (isCardSection && !content.includes('editor-card')) {
                                                 processedHtml = restructureHtmlToCards(content);
+                                                // 臨時動議若無「一、」標題，仍包成卡片，維持與肆相同的排列
+                                                if (!processedHtml.includes('editor-card')) processedHtml = `<div class="editor-card">${processedHtml}</div>`;
                                             }
                                             
                                             if (isKeywordSearch && content.toLowerCase().includes(lowerKeyword)) {
@@ -755,8 +759,8 @@
                                                 sectionContentHtml = enrichContentWithLinks(processedHtml, attachments);
                                             }
                                         } else {
-                                            const isDiscussionSection = section.field === '肆、本次會議報告及討論事項';
-                                            sectionContentHtml = isDiscussionSection ? formatDiscussionSections(content, keyword, isKeywordSearch, attachments) : formatLines(content, keyword, attachments);
+                                            sectionContentHtml = isCardSection ? formatDiscussionSections(content, keyword, isKeywordSearch, attachments) : formatLines(content, keyword, attachments);
+                                            if (isCardSection && sectionContentHtml && !sectionContentHtml.includes('sub-section-card')) sectionContentHtml = `<div class="card sub-section-card mb-3">${sectionContentHtml}</div>`;
                                         }
 
                                         if (isKeywordSearch && section.field === '肆、本次會議報告及討論事項' && !isHTML) {
